@@ -52,6 +52,7 @@ const initialState: EnvState = {
   envData: {
     serverUrl: DEFAULT_SERVER_URL_OPENAI,
     summarizeEnable: true,
+    emailAutoSendEnabled: false,
     autoExpand: true,
     theme: 'light',
     searchEnabled: true,

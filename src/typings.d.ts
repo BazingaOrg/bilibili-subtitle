@@ -22,6 +22,10 @@ interface EnvData {
   summarizeLanguage?: string
   words?: number
   summarizeFloat?: boolean
+  emailAutoSendEnabled?: boolean
+  emailRecipient?: string
+  emailWebhookUrl?: string
+  emailSubjectTemplate?: string
   theme?: 'system' | 'light' | 'dark'
   fontSize?: 'normal' | 'large'
 
@@ -42,6 +46,7 @@ interface TempData {
   compact?: boolean // 是否紧凑视图
   reviewActions?: number // 点击或总结行为达到一定次数后，显示评分（一个视频最多只加1次）
   reviewed?: boolean // 是否点击过评分,undefined: 不显示；true: 已点击；false: 未点击(需要显示)
+  summaryEmailSentVideoKey?: string
 }
 
 interface TaskDef {

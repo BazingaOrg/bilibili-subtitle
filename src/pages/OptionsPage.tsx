@@ -65,6 +65,7 @@ const OptionsPage = () => {
   const {value: autoInsertValue, onChange: setAutoInsertValue} = useEventChecked(!envData.manualInsert)
   const {value: autoExpandValue, onChange: setAutoExpandValue} = useEventChecked(envData.autoExpand)
   const {value: summarizeEnableValue, onChange: setSummarizeEnableValue} = useEventChecked(envData.summarizeEnable)
+  const {value: emailAutoSendEnabledValue, onChange: setEmailAutoSendEnabledValue} = useEventChecked(envData.emailAutoSendEnabled)
   const {value: searchEnabledValue, onChange: setSearchEnabledValue} = useEventChecked(envData.searchEnabled)
   const {value: cnSearchEnabledValue, onChange: setCnSearchEnabledValue} = useEventChecked(envData.cnSearchEnabled)
   const {value: summarizeFloatValue, onChange: setSummarizeFloatValue} = useEventChecked(envData.summarizeFloat)
@@ -75,6 +76,9 @@ const OptionsPage = () => {
   const [customModelValue, { onChange: onChangeCustomModelValue }] = useEventTarget({initialValue: envData.customModel})
   const [customModelTokensValue, setCustomModelTokensValue] = useState(envData.customModelTokens)
   const [summarizeLanguageValue, { onChange: onChangeSummarizeLanguageValue }] = useEventTarget({initialValue: envData.summarizeLanguage??SUMMARIZE_LANGUAGE_DEFAULT})
+  const [emailRecipientValue, { onChange: onChangeEmailRecipientValue }] = useEventTarget({initialValue: envData.emailRecipient ?? ''})
+  const [emailWebhookUrlValue, { onChange: onChangeEmailWebhookUrlValue }] = useEventTarget({initialValue: envData.emailWebhookUrl ?? ''})
+  const [emailSubjectTemplateValue, { onChange: onChangeEmailSubjectTemplateValue }] = useEventTarget({initialValue: envData.emailSubjectTemplate ?? '[Bilibili Summary] {{title}}'})
   const [themeValue, setThemeValue] = useState(envData.theme)
   const [fontSizeValue, setFontSizeValue] = useState(envData.fontSize)
   const [wordsValue, setWordsValue] = useState<number | undefined>(envData.words)
@@ -96,6 +100,10 @@ const OptionsPage = () => {
       customModelTokens: customModelTokensValue,
       theme: themeValue,
       summarizeEnable: summarizeEnableValue,
+      emailAutoSendEnabled: emailAutoSendEnabledValue,
+      emailRecipient: emailRecipientValue,
+      emailWebhookUrl: emailWebhookUrlValue,
+      emailSubjectTemplate: emailSubjectTemplateValue,
       summarizeFloat: summarizeFloatValue,
       summarizeLanguage: summarizeLanguageValue,
       words: wordsValue,
@@ -111,7 +119,7 @@ const OptionsPage = () => {
     setTimeout(() => {
       window.close()
     }, 3000)
-  }, [dispatch, sendExtension, sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, themeValue, summarizeEnableValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
+  }, [dispatch, sendExtension, sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
 
   const onCancel = useCallback(() => {
     window.close()
@@ -240,6 +248,28 @@ const OptionsPage = () => {
         <FormItem title='浮动窗口' htmlFor='summarizeFloat' tip='当前总结离开视野时,是否显示浮动窗口'>
           <input id='summarizeFloat' type='checkbox' className='toggle toggle-primary' checked={summarizeFloatValue}
                  onChange={setSummarizeFloatValue}/>
+        </FormItem>
+        <FormItem title='Auto email' htmlFor='emailAutoSendEnabled' tip='Send one summary email after all segments are completed for a video'>
+          <input id='emailAutoSendEnabled' type='checkbox' className='toggle toggle-primary' checked={emailAutoSendEnabledValue}
+                 onChange={setEmailAutoSendEnabledValue}/>
+        </FormItem>
+        <FormItem title='Default recipient' htmlFor='emailRecipient' tip='Use comma to separate multiple addresses'>
+          <input id='emailRecipient' type='text' className='input input-sm input-bordered w-full'
+                 placeholder='you@example.com'
+                 value={emailRecipientValue}
+                 onChange={onChangeEmailRecipientValue}/>
+        </FormItem>
+        <FormItem title='Webhook URL' htmlFor='emailWebhookUrl' tip='The extension will POST summary payload as JSON to this endpoint'>
+          <input id='emailWebhookUrl' type='text' className='input input-sm input-bordered w-full'
+                 placeholder='https://example.com/api/send-summary-email'
+                 value={emailWebhookUrlValue}
+                 onChange={onChangeEmailWebhookUrlValue}/>
+        </FormItem>
+        <FormItem title='Subject template' htmlFor='emailSubjectTemplate' tip='Supported placeholders: {{title}} {{author}} {{date}}'>
+          <input id='emailSubjectTemplate' type='text' className='input input-sm input-bordered w-full'
+                 placeholder='[Bilibili Summary] {{title}}'
+                 value={emailSubjectTemplateValue}
+                 onChange={onChangeEmailSubjectTemplateValue}/>
         </FormItem>
         <FormItem title='总结语言' htmlFor='summarizeLanguage'>
           <select id='summarizeLanguage' className="select select-sm select-bordered" value={summarizeLanguageValue} onChange={onChangeSummarizeLanguageValue}>

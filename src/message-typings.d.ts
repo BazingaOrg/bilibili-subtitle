@@ -26,7 +26,33 @@ interface ExtensionGetTabIdMessage extends ExtensionMessage<{ show: boolean }> {
   method: 'GET_TAB_ID'
 }
 
-export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage
+interface ExtensionSendSummaryEmailMessage extends ExtensionMessage<{
+  webhookUrl: string
+  payload: {
+    to: string
+    subject: string
+    markdown: string
+    videoMeta: {
+      title: string
+      url: string
+      author: string
+      publishedAt: string
+    }
+    segmentsStats: {
+      total: number
+      success: number
+      failed: number
+    }
+  }
+}, {
+  ok: boolean
+  requestId?: string
+  error?: string
+}> {
+  method: 'SEND_SUMMARY_EMAIL'
+}
+
+export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage
 
 // inject
 interface InjectToggleDisplayMessage extends InjectMessage<{}> {

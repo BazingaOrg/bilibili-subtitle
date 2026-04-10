@@ -28,6 +28,41 @@ const closeSidePanel = async () => {
   })
 }
 
+const sendSummaryEmail = async (webhookUrl: string, payload: Record<string, unknown>) => {
+  const timeout = 15000
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    controller.abort()
+  }, timeout)
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+    let data: { ok?: boolean, requestId?: string, error?: string } | undefined
+    try {
+      data = await response.json()
+    } catch (e) {
+      data = undefined
+    }
+    if (!response.ok || data?.ok === false) {
+      throw new Error(data?.error ?? `Webhook request failed: ${response.status}`)
+    }
+
+    return {
+      ok: true,
+      requestId: data?.requestId,
+    }
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 const methods: {
   [K in AllExtensionMessages['method']]: (params: Extract<AllExtensionMessages, { method: K }>['params'], context: MethodContext) => Promise<any>
 } = {
@@ -75,6 +110,16 @@ const methods: {
   },
   SHOW_FLAG: async (params, context) => {
     await setBadgeOk(context.tabId!, params.show)
+  },
+  SEND_SUMMARY_EMAIL: async (params, context) => {
+    try {
+      return await sendSummaryEmail(params.webhookUrl, params.payload)
+    } catch (error: any) {
+      return {
+        ok: false,
+        error: error?.name === 'AbortError' ? 'Webhook request timeout' : (error?.message ?? 'Unknown webhook error'),
+      }
+    }
   },
 }
 // 初始化backgroundMessage

@@ -95,32 +95,91 @@ export const setTheme = (theme: EnvData['theme']) => {
 }
 
 export const getSummarize = (title: string | undefined, segments: Segment[] | undefined): [boolean, string] => {
-  if (segments == null) {
-    return [false, '']
-  }
-
-  let content = `${SUMMARIZE_TYPES.brief.downloadName}\n\n`
-  let success = false
-  for (const segment of segments) {
-    const summary = segment.summaries.brief
-    if (summary && !isSummaryEmpty(summary)) {
-      success = true
-      content += getSummaryStr(summary)
-    } else {
-      if (segment.items.length > 0) {
-        content += `${getTimeDisplay(segment.items[0].from)} `
-      }
-      content += '未总结\n'
-    }
-  }
-
-  content += '\n--- 哔哩哔哩字幕列表扩展'
+  const result = buildSummaryOverview(segments)
+  const content = result.content
+  const success = result.success
 
   if (!success) {
     toast.error('未找到总结')
   }
 
   return [success, content]
+}
+
+export const buildSummaryOverview = (segments: Segment[] | undefined): {
+  success: boolean
+  content: string
+  total: number
+  successCount: number
+  failedCount: number
+  summaryBody: string
+} => {
+  if (segments == null) {
+    return {
+      success: false,
+      content: '',
+      total: 0,
+      successCount: 0,
+      failedCount: 0,
+      summaryBody: '',
+    }
+  }
+
+  let summaryBody = ''
+  let success = false
+  let successCount = 0
+  let failedCount = 0
+  for (const segment of segments) {
+    const summary = segment.summaries.brief
+    if (summary && !isSummaryEmpty(summary)) {
+      success = true
+      successCount++
+      summaryBody += getSummaryStr(summary)
+    } else {
+      failedCount++
+      if (segment.items.length > 0) {
+        summaryBody += `${getTimeDisplay(segment.items[0].from)} `
+      }
+      summaryBody += '未总结\n'
+    }
+  }
+  let content = `${SUMMARIZE_TYPES.brief.downloadName}\n\n${summaryBody}`
+  content += '\n--- 哔哩哔哩字幕列表扩展'
+
+  return {
+    success,
+    content,
+    total: segments.length,
+    successCount,
+    failedCount,
+    summaryBody,
+  }
+}
+
+export const buildSummaryEmailMarkdown = (params: {
+  segments?: Segment[]
+}): {
+  success: boolean
+  markdown: string
+  stats: {
+    total: number
+    success: number
+    failed: number
+  }
+} => {
+  const { segments } = params
+  const summary = buildSummaryOverview(segments)
+  const markdown = summary.summaryBody.trim()
+
+  return {
+    success: summary.success,
+    markdown,
+    stats: {
+      total: summary.total,
+      success: summary.successCount,
+      failed: summary.failedCount,
+    },
+  }
 }
 
 /**

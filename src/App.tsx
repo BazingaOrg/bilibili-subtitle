@@ -45,6 +45,7 @@ const sanitizeTempData = (data?: TempData): TempData | undefined => {
     compact: data.compact,
     reviewActions: data.reviewActions,
     reviewed: data.reviewed,
+    summaryEmailSentVideoKey: data.summaryEmailSentVideoKey,
   }
 }
 

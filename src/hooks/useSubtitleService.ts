@@ -5,6 +5,7 @@ import {
   setCurIdx,
   setCurInfo,
   setData,
+  setFoldAll,
   setNoVideo,
   setSegmentFold,
   setSegments,
@@ -37,9 +38,6 @@ const useSubtitleService = () => {
   const eventBus = useContext(EventBusContext)
   const needScroll = useAppSelector(state => state.env.needScroll)
   const segments = useAppSelector(state => state.env.segments)
-  const transResults = useAppSelector(state => state.env.transResults)
-  const hideOnDisableAutoTranslate = useAppSelector(state => state.env.envData.hideOnDisableAutoTranslate)
-  const autoTranslate = useAppSelector(state => state.env.autoTranslate)
   const reviewed = useAppSelector(state => state.env.tempData.reviewed)
   const reviewActions = useAppSelector(state => state.env.tempData.reviewActions)
   const {sendInject} = useMessage(!!envData.sidePanel)
@@ -183,6 +181,7 @@ const useSubtitleService = () => {
                 startIdx: chapterItems[0].idx,
                 endIdx: chapterItems[chapterItems.length - 1].idx,
                 text: chapterText,
+                fold: true,
                 chapterTitle: chapter.content,
                 summaries: {},
               })
@@ -200,6 +199,7 @@ const useSubtitleService = () => {
                     startIdx: transcriptItems[0].idx,
                     endIdx: transcriptItems[transcriptItems.length - 1].idx,
                     text: getWholeText(transcriptItems.map(item => item.content)),
+                    fold: true,
                     chapterTitle: chapter.content,
                     summaries: {},
                   })
@@ -225,6 +225,7 @@ const useSubtitleService = () => {
                 startIdx: transcriptItems[0].idx,
                 endIdx: transcriptItems[transcriptItems.length - 1].idx,
                 text: getWholeText(transcriptItems.map(item => item.content)),
+                fold: true,
                 summaries: {},
               })
               // reset
@@ -239,11 +240,13 @@ const useSubtitleService = () => {
           startIdx: 0,
           endIdx: items.length-1,
           text: getWholeText(items.map(item => item.content)),
+          fold: true,
           summaries: {},
         }]
       }
     }
     dispatch(setSegments(segments))
+    dispatch(setFoldAll(!!segments?.length))
   }, [data?.body, dispatch, envData, chapters])
 
   // 每0.5秒更新当前视频时间
@@ -256,20 +259,6 @@ const useSubtitleService = () => {
     })
   }, 500)
 
-  // show translated text in the video
-  useEffect(() => {
-    if (hideOnDisableAutoTranslate && !autoTranslate) {
-      sendInject(null, 'HIDE_TRANS', {})
-      return
-    }
-
-    const transResult = curIdx?transResults[curIdx]:undefined
-    if (transResult?.code === '200' && transResult.data) {
-      sendInject(null, 'UPDATE_TRANS_RESULT', {result: transResult.data})
-    } else {
-      sendInject(null, 'HIDE_TRANS', {})
-    }
-  }, [autoTranslate, curIdx, hideOnDisableAutoTranslate, sendInject, transResults])
 }
 
 export default useSubtitleService

@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit'
-import {find, findIndex} from 'lodash-es'
+import {find} from 'lodash-es'
 import {DEFAULT_SERVER_URL_OPENAI, TOTAL_HEIGHT_DEF} from '../consts/const'
 
 interface EnvState {
@@ -13,7 +13,6 @@ interface EnvState {
 
   fold: boolean // fold app
   foldAll?: boolean // fold all segments
-  autoTranslate?: boolean
   autoScroll?: boolean
   checkAutoScroll?: boolean
   curOffsetTop?: number
@@ -35,12 +34,7 @@ interface EnvState {
   ctime?: number | null
   author?: string
   taskIds?: string[]
-  transResults: { [key: number]: TransResult }
-  lastTransTime?: number
   lastSummarizeTime?: number
-
-  // ask
-  asks: AskInfo[]
 
   /**
    * 是否输入中（中文）
@@ -57,28 +51,23 @@ interface EnvState {
 const initialState: EnvState = {
   envData: {
     serverUrl: DEFAULT_SERVER_URL_OPENAI,
-    translateEnable: true,
     summarizeEnable: true,
     autoExpand: true,
     theme: 'light',
     searchEnabled: true,
   },
   tempData: {
-    curSummaryType: 'overview',
   },
   totalHeight: TOTAL_HEIGHT_DEF,
   autoScroll: true,
   envReady: false,
   tempReady: false,
   fold: true,
-  transResults: {},
 
   inputting: false,
 
   searchText: '',
   searchResult: {},
-
-  asks: [],
 
   reviewAction: false,
 }
@@ -129,9 +118,6 @@ export const slice = createSlice({
     setTaskIds: (state, action: PayloadAction<string[]>) => {
       state.taskIds = action.payload
     },
-    setLastTransTime: (state, action: PayloadAction<number>) => {
-      state.lastTransTime = action.payload
-    },
     setLastSummarizeTime: (state, action: PayloadAction<number>) => {
       state.lastSummarizeTime = action.payload
     },
@@ -140,21 +126,6 @@ export const slice = createSlice({
     },
     delTaskId: (state, action: PayloadAction<string>) => {
       state.taskIds = state.taskIds?.filter(id => id !== action.payload)
-    },
-    addTransResults: (state, action: PayloadAction<{ [key: number]: TransResult }>) => {
-      // 不要覆盖TransResult里code为200的
-      for (const payloadKey in action.payload) {
-        const payloadItem = action.payload[payloadKey]
-        const stateItem = state.transResults[payloadKey]
-        if (!stateItem || stateItem.code !== '200') {
-          state.transResults[payloadKey] = payloadItem
-        } else if (stateItem.code === '200') { // 保留data
-          state.transResults[payloadKey] = {
-            ...payloadItem,
-            data: stateItem.data,
-          }
-        }
-      }
     },
     setSummaryContent: (state, action: PayloadAction<{
       segmentStartIdx: number
@@ -215,21 +186,6 @@ export const slice = createSlice({
         }
       }
     },
-    addAskInfo: (state, action: PayloadAction<AskInfo>) => {
-      state.asks.push(action.payload)
-    },
-    delAskInfo: (state, action: PayloadAction<string>) => {
-      state.asks = state.asks.filter(ask => ask.id !== action.payload)
-    },
-    mergeAskInfo: (state, action: PayloadAction<PartialOfAskInfo>) => {
-      const idx = findIndex(state.asks, {id: action.payload.id})
-      if (idx >= 0) {
-        state.asks[idx] = {
-          ...state.asks[idx],
-          ...action.payload,
-        }
-      }
-    },
     setSegmentFold: (state, action: PayloadAction<{
       segmentStartIdx: number
       fold: boolean
@@ -239,14 +195,8 @@ export const slice = createSlice({
         segment.fold = action.payload.fold
       }
     },
-    clearTransResults: (state) => {
-      state.transResults = {}
-    },
     setCurIdx: (state, action: PayloadAction<number | undefined>) => {
       state.curIdx = action.payload
-    },
-    setAutoTranslate: (state, action: PayloadAction<boolean>) => {
-      state.autoTranslate = action.payload
     },
     setAutoScroll: (state, action: PayloadAction<boolean>) => {
       state.autoScroll = action.payload
@@ -323,13 +273,9 @@ export const {
   setTitle,
   setSegments,
   setLastSummarizeTime,
-  setLastTransTime,
-  clearTransResults,
-  addTransResults,
   addTaskId,
   delTaskId,
   setTaskIds,
-  setAutoTranslate,
   setAutoScroll,
   setNoVideo,
   setReviewAction,
@@ -345,9 +291,6 @@ export const {
   setSearchText,
   setSearchResult,
   setInputting,
-  addAskInfo,
-  delAskInfo,
-  mergeAskInfo,
   setCtime,
   setAuthor,
   setChapters,

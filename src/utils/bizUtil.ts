@@ -6,44 +6,6 @@ export const debug = (...args: any[]) => {
   console.debug('[APP]', ...args)
 }
 
-/**
- * 获取译文
- */
-export const getTransText = (transResult: TransResult, hideOnDisableAutoTranslate: boolean | undefined, autoTranslate: boolean | undefined) => {
-  if (transResult && (!transResult.code || transResult.code === '200') && (autoTranslate === true || !hideOnDisableAutoTranslate) && transResult.data) {
-    return transResult.data
-  }
-}
-
-export const getDisplay = (transDisplay_: EnvData['transDisplay'], content: string, transText: string | undefined) => {
-  const transDisplay = transDisplay_ ?? 'originPrimary'
-  let main, sub
-  // main
-  if (transText && (transDisplay === 'targetPrimary' || transDisplay === 'target')) {
-    main = transText
-  } else {
-    main = content
-  }
-  // sub
-  switch (transDisplay) {
-    case 'originPrimary':
-      sub = transText
-      break
-    case 'targetPrimary':
-      if (transText) {
-        sub = content
-      }
-      break
-    default:
-      break
-  }
-  // return
-  return {
-    main,
-    sub,
-  }
-}
-
 export const getWholeText = (items: string[]) => {
   return items.join(',').replaceAll('\n', ' ')
 }
@@ -69,52 +31,19 @@ export const getTimeDisplay = (seconds: number) => {
 }
 
 export const isSummaryEmpty = (summary: Summary) => {
-  if (summary.type === 'overview') {
-    const content: OverviewItem[] = summary.content??[]
-    return content.length === 0
-  } else if (summary.type === 'keypoint') {
-    const content: string[] = summary.content??[]
-    return content.length === 0
-  } else if (summary.type === 'brief') {
-    const content: string[] = summary.content??''
-    return content.length === 0
-  } else if (summary.type === 'question') {
-    const content: any[] = summary.content??[]
-    return content.length === 0
-  } else if (summary.type === 'debate') {
-    const content: Array<{ side: string, content: string }> = summary.content ?? []
-    return content.length === 0
+  const content: { summary: string } = summary.content ?? {
+    summary: ''
   }
-  return true
+  return content.summary.length === 0
 }
 
 export const getSummaryStr = (summary: Summary) => {
   let s = ''
-  if (summary.type === 'overview') {
-    const content: OverviewItem[] = summary.content ?? []
-    for (const overviewItem of content) {
-      s += (overviewItem.emoji ?? '') + overviewItem.time + ' ' + overviewItem.key + '\n'
-    }
-  } else if (summary.type === 'keypoint') {
-    const content: string[] = summary.content ?? []
-    for (const keypoint of content) {
-      s += '- ' + keypoint + '\n'
-    }
-  } else if (summary.type === 'brief') {
+  if (summary.type === 'brief') {
     const content: { summary: string } = summary.content ?? {
       summary: ''
     }
     s += content.summary + '\n'
-  } else if (summary.type === 'question') {
-    const content: Array<{ q: string, a: string }> = summary.content ?? []
-    s += content.map(item => {
-      return item.q + '\n' + item.a + '\n'
-    }).join('\n')
-  } else if (summary.type === 'debate') {
-    const content: Array<{ side: string, content: string }> = summary.content ?? []
-    s += content.map(item => {
-      return (item.side === 'pro'?'正方：':'反方：') + item.content + '\n'
-    }).join('\n')
   }
   return s
 }
@@ -165,15 +94,15 @@ export const setTheme = (theme: EnvData['theme']) => {
   }
 }
 
-export const getSummarize = (title: string | undefined, segments: Segment[] | undefined, type: SummaryType): [boolean, string] => {
+export const getSummarize = (title: string | undefined, segments: Segment[] | undefined): [boolean, string] => {
   if (segments == null) {
     return [false, '']
   }
 
-  let content = `${SUMMARIZE_TYPES[type]?.downloadName ?? ''}\n\n`
+  let content = `${SUMMARIZE_TYPES.brief.downloadName}\n\n`
   let success = false
   for (const segment of segments) {
-    const summary = segment.summaries[type]
+    const summary = segment.summaries.brief
     if (summary && !isSummaryEmpty(summary)) {
       success = true
       content += getSummaryStr(summary)

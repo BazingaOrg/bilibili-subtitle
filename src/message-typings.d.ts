@@ -57,14 +57,6 @@ interface InjectRefreshVideoInfoMessage extends InjectMessage<{ force: boolean }
   method: 'REFRESH_VIDEO_INFO'
 }
 
-interface InjectUpdateTransResultMessage extends InjectMessage<{ result: string }> {
-  method: 'UPDATE_TRANS_RESULT'
-}
-
-interface InjectHideTransMessage extends InjectMessage<{}> {
-  method: 'HIDE_TRANS'
-}
-
 interface InjectPlayMessage extends InjectMessage<{ play: boolean }> {
   method: 'PLAY'
 }
@@ -73,7 +65,7 @@ interface InjectDownloadAudioMessage extends InjectMessage<{}> {
   method: 'DOWNLOAD_AUDIO'
 }
 
-export type AllInjectMessages = InjectToggleDisplayMessage | InjectFoldMessage | InjectMoveMessage | InjectGetSubtitleMessage | InjectGetVideoStatusMessage | InjectGetVideoElementInfoMessage | InjectRefreshVideoInfoMessage | InjectUpdateTransResultMessage | InjectHideTransMessage | InjectPlayMessage | InjectDownloadAudioMessage
+export type AllInjectMessages = InjectToggleDisplayMessage | InjectFoldMessage | InjectMoveMessage | InjectGetSubtitleMessage | InjectGetVideoStatusMessage | InjectGetVideoElementInfoMessage | InjectRefreshVideoInfoMessage | InjectPlayMessage | InjectDownloadAudioMessage
 
 // app
 interface AppSetInfosMessage extends AppMessage<{ infos: any }> {

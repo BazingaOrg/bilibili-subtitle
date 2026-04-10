@@ -2,11 +2,9 @@ import React, {PropsWithChildren, useCallback, useMemo, useState} from 'react'
 import {setEnvData} from '../redux/envReducer'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import {
-  ASK_ENABLED_DEFAULT,
   CUSTOM_MODEL_TOKENS,
   DEFAULT_SERVER_URL_GEMINI,
   DEFAULT_SERVER_URL_OPENAI,
-  LANGUAGE_DEFAULT,
   LANGUAGES,
   MODEL_DEFAULT,
   MODEL_MAP,
@@ -15,10 +13,6 @@ import {
   PROMPT_DEFAULTS,
   PROMPT_TYPES,
   SUMMARIZE_LANGUAGE_DEFAULT,
-  TRANSLATE_FETCH_DEFAULT,
-  TRANSLATE_FETCH_MAX,
-  TRANSLATE_FETCH_MIN,
-  TRANSLATE_FETCH_STEP,
   WORDS_RATE,
 } from '../consts/const'
 import {IoWarning} from 'react-icons/all'
@@ -70,50 +64,25 @@ const OptionsPage = () => {
   const {value: sidePanelValue, onChange: setSidePanelValue} = useEventChecked(envData.sidePanel)
   const {value: autoInsertValue, onChange: setAutoInsertValue} = useEventChecked(!envData.manualInsert)
   const {value: autoExpandValue, onChange: setAutoExpandValue} = useEventChecked(envData.autoExpand)
-  // const {value: autoScrollValue, onChange: setAutoScrollValue} = useEventChecked(envData.autoScroll)
-  const {value: translateEnableValue, onChange: setTranslateEnableValue} = useEventChecked(envData.translateEnable)
   const {value: summarizeEnableValue, onChange: setSummarizeEnableValue} = useEventChecked(envData.summarizeEnable)
   const {value: searchEnabledValue, onChange: setSearchEnabledValue} = useEventChecked(envData.searchEnabled)
-  const {value: askEnabledValue, onChange: setAskEnabledValue} = useEventChecked(envData.askEnabled??ASK_ENABLED_DEFAULT)
   const {value: cnSearchEnabledValue, onChange: setCnSearchEnabledValue} = useEventChecked(envData.cnSearchEnabled)
   const {value: summarizeFloatValue, onChange: setSummarizeFloatValue} = useEventChecked(envData.summarizeFloat)
   const {value: chapterModeValue, onChange: setChapterModeValue} = useEventChecked(envData.chapterMode ?? true)
   const [apiKeyValue, { onChange: onChangeApiKeyValue }] = useEventTarget({initialValue: envData.apiKey??''})
   const [serverUrlValue, setServerUrlValue] = useState(envData.serverUrl)
-  const [languageValue, { onChange: onChangeLanguageValue }] = useEventTarget({initialValue: envData.language??LANGUAGE_DEFAULT})
   const [modelValue, { onChange: onChangeModelValue }] = useEventTarget({initialValue: envData.model??MODEL_DEFAULT})
   const [customModelValue, { onChange: onChangeCustomModelValue }] = useEventTarget({initialValue: envData.customModel})
   const [customModelTokensValue, setCustomModelTokensValue] = useState(envData.customModelTokens)
   const [summarizeLanguageValue, { onChange: onChangeSummarizeLanguageValue }] = useEventTarget({initialValue: envData.summarizeLanguage??SUMMARIZE_LANGUAGE_DEFAULT})
-  const [hideOnDisableAutoTranslateValue, setHideOnDisableAutoTranslateValue] = useState(envData.hideOnDisableAutoTranslate)
   const [themeValue, setThemeValue] = useState(envData.theme)
   const [fontSizeValue, setFontSizeValue] = useState(envData.fontSize)
-  const [transDisplayValue, setTransDisplayValue] = useState(envData.transDisplay)
   const [wordsValue, setWordsValue] = useState<number | undefined>(envData.words)
-  const [fetchAmountValue, setFetchAmountValue] = useState(envData.fetchAmount??TRANSLATE_FETCH_DEFAULT)
   const [promptsFold, {toggle: togglePromptsFold}] = useBoolean(true)
   const [promptsValue, setPromptsValue] = useState<{[key: string]: string}>(envData.prompts??{})
-  // const wordsList = useMemo(() => {
-  //   const list = []
-  //   for (let i = WORDS_MIN; i <= WORDS_MAX; i += WORDS_STEP) {
-  //     list.push(i)
-  //   }
-  //   return list
-  // }, [])
-  const transFetchAmountList = useMemo(() => {
-    const list = []
-    for (let i = TRANSLATE_FETCH_MIN; i <= TRANSLATE_FETCH_MAX; i += TRANSLATE_FETCH_STEP) {
-      list.push(i)
-    }
-    return list
-  }, [])
   const apiKeySetted = useMemo(() => {
     return !!apiKeyValue
   }, [apiKeyValue])
-
-  const onChangeHideOnDisableAutoTranslate = useCallback((e: any) => {
-    setHideOnDisableAutoTranslateValue(e.target.checked)
-  }, [])
 
   const onSave = useCallback(() => {
     dispatch(setEnvData({
@@ -125,21 +94,15 @@ const OptionsPage = () => {
       model: modelValue,
       customModel: customModelValue,
       customModelTokens: customModelTokensValue,
-      translateEnable: translateEnableValue,
-      language: languageValue,
-      hideOnDisableAutoTranslate: hideOnDisableAutoTranslateValue,
       theme: themeValue,
-      transDisplay: transDisplayValue,
       summarizeEnable: summarizeEnableValue,
       summarizeFloat: summarizeFloatValue,
       summarizeLanguage: summarizeLanguageValue,
       words: wordsValue,
-      fetchAmount: fetchAmountValue,
       fontSize: fontSizeValue,
       prompts: promptsValue,
       searchEnabled: searchEnabledValue,
       cnSearchEnabled: cnSearchEnabledValue,
-      askEnabled: askEnabledValue,
       chapterMode: chapterModeValue,
     }))
     toast.success('保存成功')
@@ -148,30 +111,10 @@ const OptionsPage = () => {
     setTimeout(() => {
       window.close()
     }, 3000)
-  }, [dispatch, sendExtension, sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, translateEnableValue, languageValue, hideOnDisableAutoTranslateValue, themeValue, transDisplayValue, summarizeEnableValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fetchAmountValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, askEnabledValue, chapterModeValue])
+  }, [dispatch, sendExtension, sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, themeValue, summarizeEnableValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
 
   const onCancel = useCallback(() => {
     window.close()
-  }, [])
-
-  const onFetchAmountChange = useCallback((e: any) => {
-    setFetchAmountValue(parseInt(e.target.value))
-  }, [])
-
-  const onWordsChange = useCallback((e: any) => {
-    setWordsValue(parseInt(e.target.value))
-  }, [])
-
-  const onSel1 = useCallback(() => {
-    setTransDisplayValue('originPrimary')
-  }, [])
-
-  const onSel2 = useCallback(() => {
-    setTransDisplayValue('targetPrimary')
-  }, [])
-
-  const onSel3 = useCallback(() => {
-    setTransDisplayValue('target')
   }, [])
 
   const onSelTheme1 = useCallback(() => {
@@ -285,42 +228,6 @@ const OptionsPage = () => {
       </OptionCard>
 
       <OptionCard title={<div className='flex items-center'>
-        翻译配置
-        {!apiKeySetted && <div className='tooltip tooltip-right ml-1' data-tip='未设置ApiKey无法使用'>
-          <IoWarning className='text-sm text-warning'/>
-        </div>}
-      </div>}>
-        <FormItem title='启用翻译' htmlFor='translateEnable'>
-          <input id='translateEnable' type='checkbox' className='toggle toggle-primary' checked={translateEnableValue}
-                 onChange={setTranslateEnableValue}/>
-        </FormItem>
-        <FormItem title='目标语言' htmlFor='language'>
-          <select id='language' className="select select-sm select-bordered" value={languageValue}
-                  onChange={onChangeLanguageValue}>
-            {LANGUAGES.map(language => <option key={language.code} value={language.code}>{language.name}</option>)}
-          </select>
-        </FormItem>
-        <FormItem title='翻译条数' tip='每次翻译条数'>
-          <div className='flex-1 flex flex-col'>
-            <input type="range" min={TRANSLATE_FETCH_MIN} max={TRANSLATE_FETCH_MAX} step={TRANSLATE_FETCH_STEP} value={fetchAmountValue} className="range range-primary" onChange={onFetchAmountChange} />
-            <div className="w-full flex justify-between text-sm px-2">
-              {transFetchAmountList.map(amount => <span key={amount}>{amount}</span>)}
-            </div>
-          </div>
-        </FormItem>
-        <FormItem title='翻译显示'>
-          <div className="btn-group">
-            <button onClick={onSel1} className={classNames('btn btn-sm no-animation', (!transDisplayValue || transDisplayValue === 'originPrimary')?'btn-active':'')}>原文为主</button>
-            <button onClick={onSel2} className={classNames('btn btn-sm no-animation', transDisplayValue === 'targetPrimary'?'btn-active':'')}>翻译为主</button>
-            <button onClick={onSel3} className={classNames('btn btn-sm no-animation', transDisplayValue === 'target'?'btn-active':'')}>仅翻译</button>
-          </div>
-        </FormItem>
-        <FormItem title='隐藏翻译' tip='取消自动翻译时,隐藏已翻译内容' htmlFor='hideOnDisableAutoTranslate'>
-          <input id='hideOnDisableAutoTranslate' type='checkbox' className='toggle toggle-primary' checked={hideOnDisableAutoTranslateValue}
-                 onChange={onChangeHideOnDisableAutoTranslate}/>
-        </FormItem>
-      </OptionCard>
-      <OptionCard title={<div className='flex items-center'>
         总结配置
         {!apiKeySetted && <div className='tooltip tooltip-right ml-1' data-tip='未设置ApiKey无法使用'>
           <IoWarning className='text-sm text-warning'/>
@@ -365,20 +272,11 @@ const OptionsPage = () => {
                  onChange={setCnSearchEnabledValue}/>
         </FormItem>
       </OptionCard>
-      <OptionCard title={<div className='flex items-center'>
-        提问配置
-      </div>}>
-        <FormItem title='启用提问' htmlFor='askEnabled' tip='是否启用字幕提问功能'>
-          <input id='askEnabled' type='checkbox' className='toggle toggle-primary' checked={askEnabledValue}
-                 onChange={setAskEnabledValue}/>
-        </FormItem>
-      </OptionCard>
-
       <OptionCard title='提示词配置'>
         <div className='flex justify-center'>
           <a className='text-sm link link-primary' onClick={togglePromptsFold}>点击{promptsFold ? '展开' : '折叠'}</a>
         </div>
-        {!promptsFold && PROMPT_TYPES.map((item, idx) => <FormItem key={item.type} title={<div>
+        {!promptsFold && PROMPT_TYPES.map((item) => <FormItem key={item.type} title={<div>
           <div>{item.name}</div>
           <div className='link text-sm' onClick={() => {
             setPromptsValue({

@@ -9,34 +9,10 @@ export const IFRAME_ID = 'bilibili-subtitle-iframe'
 export const STORAGE_ENV = 'bilibili-subtitle_env'
 export const STORAGE_TEMP = 'bilibili-subtitle_temp'
 
-export const PROMPT_TYPE_TRANSLATE = 'translate'
-export const PROMPT_TYPE_SUMMARIZE_OVERVIEW = 'summarize_overview'
-export const PROMPT_TYPE_SUMMARIZE_KEYPOINT = 'summarize_keypoint'
-export const PROMPT_TYPE_SUMMARIZE_QUESTION = 'summarize_question'
-export const PROMPT_TYPE_SUMMARIZE_DEBATE = 'summarize_debate'
 export const PROMPT_TYPE_SUMMARIZE_BRIEF = 'summarize_brief'
-export const PROMPT_TYPE_ASK = 'ask'
 export const PROMPT_TYPES = [{
-  name: '翻译',
-  type: PROMPT_TYPE_TRANSLATE,
-}, {
-  name: '概览',
-  type: PROMPT_TYPE_SUMMARIZE_OVERVIEW,
-}, {
-  name: '要点',
-  type: PROMPT_TYPE_SUMMARIZE_KEYPOINT,
-}, {
   name: '总结',
   type: PROMPT_TYPE_SUMMARIZE_BRIEF,
-}, {
-  name: '问题',
-  type: PROMPT_TYPE_SUMMARIZE_QUESTION,
-}, {
-  name: '辩论',
-  type: PROMPT_TYPE_SUMMARIZE_DEBATE,
-}, {
-  name: '提问',
-  type: PROMPT_TYPE_ASK,
 }]
 
 export const SUMMARIZE_TYPES = {
@@ -46,90 +22,9 @@ export const SUMMARIZE_TYPES = {
     downloadName: '💡视频总结💡',
     promptType: PROMPT_TYPE_SUMMARIZE_BRIEF,
   },
-  overview: {
-    name: '概览',
-    desc: '可定位到视频位置',
-    downloadName: '💡视频概览💡',
-    promptType: PROMPT_TYPE_SUMMARIZE_OVERVIEW,
-  },
-  keypoint: {
-    name: '要点',
-    desc: '完整的要点提取',
-    downloadName: '💡视频要点💡',
-    promptType: PROMPT_TYPE_SUMMARIZE_KEYPOINT,
-  },
-  question: {
-    name: '问题',
-    desc: '常见问题',
-    downloadName: '💡常见问题💡',
-    promptType: PROMPT_TYPE_SUMMARIZE_QUESTION,
-  },
-  debate: {
-    name: '辩论',
-    desc: '辩论',
-    downloadName: '💡辩论💡',
-    promptType: PROMPT_TYPE_SUMMARIZE_DEBATE,
-  },
 }
 
 export const PROMPT_DEFAULTS = {
-  [PROMPT_TYPE_TRANSLATE]: `You are a professional translator. Translate following video subtitles to language '{{language}}'.
-Preserve incomplete sentence.
-Translate in the same json format.
-Answer in markdown json format.
-
-video subtitles:
-
-\`\`\`
-{{subtitles}}
-\`\`\``,
-  [PROMPT_TYPE_SUMMARIZE_OVERVIEW]: `You are a helpful assistant that summarize key points of video subtitle.
-Summarize 3 to 8 brief key points in language '{{language}}'.
-Answer in markdown json format.
-The emoji should be related to the key point and 1 char length.
-
-example output format:
-
-\`\`\`json
-[
-  {
-    "time": "03:00",
-    "emoji": "👍",
-    "key": "key point 1"
-  },
-  {
-    "time": "10:05",
-    "emoji": "😊",
-    "key": "key point 2"
-  }
-]
-\`\`\`
-
-The video's title: '''{{title}}'''.
-The video's subtitles:
-
-'''
-{{subtitles}}
-'''`,
-  [PROMPT_TYPE_SUMMARIZE_KEYPOINT]: `You are a helpful assistant that summarize key points of video subtitle.
-Summarize brief key points in language '{{language}}'.
-Answer in markdown json format.
-
-example output format:
-
-\`\`\`json
-[
-  "key point 1",
-  "key point 2"
-]
-\`\`\`
-
-The video's title: '''{{title}}'''.
-The video's subtitles:
-
-'''
-{{segment}}
-'''`,
   [PROMPT_TYPE_SUMMARIZE_BRIEF]: `You are a helpful assistant that summarize video subtitle.
 Summarize in language '{{language}}'.
 Answer in markdown json format.
@@ -148,108 +43,12 @@ The video's subtitles:
 '''
 {{segment}}
 '''`,
-  [PROMPT_TYPE_SUMMARIZE_QUESTION]: `You are a helpful assistant that skilled at extracting questions from video subtitle.
-
-## Context
-
-The video's title: '''{{title}}'''.
-The video's subtitles:
-
-'''
-{{segment}}
-'''
-
-## Command
-
-Accurately extract key questions and their corresponding answers from the video subtitles based on the actual content provided. The number of questions should be between 3 and 5.
-
-- Identify questions as sentences starting with interrogative words (e.g., "What", "How", "Why") and extract the following sentences that directly answer these questions.
-- Include only those questions and answers that are relevant to the main points of the video, and ensure they cover different aspects of the video's content.
-- If an answer spans multiple non-consecutive parts of the subtitles, concatenate them into a coherent response without adding any information not present in the subtitles.
-- In cases where the number of potential Q&As exceeds 5, prioritize the most informative and directly answered ones.
-- If clear questions and answers are not available in the subtitles, refrain from creating them and instead note the absence of direct Q&As.
-- Answer in language '{{language}}'.
-- Format the output in markdown json format, as specified.
-
-## Output format
-
-Provide an example to illustrate the expected output:
-
-\`\`\`json
-[
-    {
-        "q": "What is the main theme of the video?",
-        "a": "The main theme of the video is explained as..."
-    },
-    {
-        "q": "How is the topic developed?",
-        "a": "The topic is developed through various examples, including..."
-    }
-]
-\`\`\`
-`,
-  [PROMPT_TYPE_SUMMARIZE_DEBATE]: `You are a helpful assistant skilled at generating debates based on video subtitles.
-
-## Context
-
-The video's title: '''{{title}}'''.
-The video's subtitles:
-
-'''
-{{segment}}
-'''
-
-## Command
-
-Please play the roles of both the affirmative and negative sides to discuss the author's viewpoint.
-The conversation should consist of 10 rounds(5 sentences from the affirmative side, 5 sentences from the negative side.).
-The tone should be straightforward.
-
-Answer in language '{{language}}'.
-
-## Output format
-
-Provide an example to illustrate the expected output:
-
-\`\`\`json
-[
-    {
-        "side": "pro",
-        "content": "xxx"
-    },
-    {
-        "side": "con",
-        "content": "xxx"
-    }
-]
-\`\`\`
-`,
-  [PROMPT_TYPE_ASK]: `You are a helpful assistant who answers question related to video subtitles.
-Answer in language '{{language}}'.
-
-The video's title: '''{{title}}'''.
-The video's subtitles:
-
-'''
-{{segment}}
-'''
-
-Question: '''{{question}}'''
-Answer:
-`,
 }
 
 export const TASK_EXPIRE_TIME = 15*60*1000
 
 export const PAGE_MAIN = 'main'
 export const PAGE_SETTINGS = 'settings'
-
-export const TRANSLATE_COOLDOWN = 5*1000
-export const TRANSLATE_FETCH_DEFAULT = 15
-export const TRANSLATE_FETCH_MIN = 5
-export const TRANSLATE_FETCH_MAX = 25
-export const TRANSLATE_FETCH_STEP = 5
-export const LANGUAGE_DEFAULT = 'en'
 
 export const TOTAL_HEIGHT_MIN = 400
 export const TOTAL_HEIGHT_DEF = 520
@@ -266,7 +65,6 @@ export const WORDS_STEP = 500
 export const SUMMARIZE_THRESHOLD = 100
 export const SUMMARIZE_LANGUAGE_DEFAULT = 'cn'
 export const SUMMARIZE_ALL_THRESHOLD = 5
-export const ASK_ENABLED_DEFAULT = true
 export const DEFAULT_SERVER_URL_OPENAI = 'https://api.openai.com'
 export const DEFAULT_SERVER_URL_GEMINI = 'https://generativelanguage.googleapis.com/v1beta/openai/'
 export const CUSTOM_MODEL_TOKENS = 16385

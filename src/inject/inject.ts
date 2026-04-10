@@ -38,14 +38,10 @@ const debug = (...args: any[]) => {
 
     videoElement?: HTMLVideoElement
     videoElementHeight: number
-
-    showTrans: boolean
-    curTrans?: string
   } = {
     injectMessaging: new InjectMessaging(DEFAULT_USE_PORT),
     fold: true,
     videoElementHeight: TOTAL_HEIGHT_DEF,
-    showTrans: false,
   }
 
   const getVideoElement = () => {
@@ -325,43 +321,6 @@ const debug = (...args: any[]) => {
     },
     REFRESH_VIDEO_INFO: async (params) => {
       refreshVideoInfo(params.force)
-    },
-    UPDATE_TRANS_RESULT: async (params) => {
-      runtime.showTrans = true
-      runtime.curTrans = params?.result
-
-      let text = document.getElementById('trans-result-text')
-      if (text) {
-        text.innerHTML = runtime.curTrans ?? ''
-      } else {
-        const container = document.getElementsByClassName('bpx-player-subtitle-panel-wrap')?.[0]
-        if (container) {
-          const div = document.createElement('div')
-          div.style.display = 'flex'
-          div.style.justifyContent = 'center'
-          div.style.margin = '2px'
-          text = document.createElement('text')
-          text.id = 'trans-result-text'
-          text.innerHTML = runtime.curTrans ?? ''
-          text.style.fontSize = '1rem'
-          text.style.padding = '5px'
-          text.style.color = 'white'
-          text.style.background = 'rgba(0, 0, 0, 0.4)'
-          div.append(text)
-
-          container.append(div)
-        }
-      }
-      text && (text.style.display = runtime.curTrans ? 'block' : 'none')
-    },
-    HIDE_TRANS: async (params) => {
-      runtime.showTrans = false
-      runtime.curTrans = undefined
-
-      const text = document.getElementById('trans-result-text')
-      if (text) {
-        text.style.display = 'none'
-      }
     },
     PLAY: async (params) => {
       const { play } = params

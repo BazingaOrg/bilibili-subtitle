@@ -70,7 +70,6 @@ const MoreBtn = (props: Props) => {
   const title = useAppSelector(state => state.env.title)
   const ctime = useAppSelector(state => state.env.ctime) // 时间戳，单位s
   const author = useAppSelector(state => state.env.author)
-  const curSummaryType = useAppSelector(state => state.env.tempData.curSummaryType)
 
   const {sendInject} = useMessage(!!envData.sidePanel)
 
@@ -146,7 +145,7 @@ const MoreBtn = (props: Props) => {
       suffix = 'json'
     } else if (downloadType === 'summarize') {
       s = `${title??'无标题'}\n${url??'无链接'}\n${author??'无作者'} ${time}\n\n`
-      const [success, content] = getSummarize(title, segments, curSummaryType)
+      const [success, content] = getSummarize(title, segments)
       if (!success) return
       s += content
       fileName += ' - 总结'
@@ -162,7 +161,7 @@ const MoreBtn = (props: Props) => {
       }).catch(console.error)
     }
     setMoreVisible(false)
-  }, [author, ctime, curSummaryType, data, downloadType, segments, title, url])
+  }, [author, ctime, data, downloadType, segments, title, url])
 
   const downloadAudioCallback = useCallback(() => {
     sendInject(null, 'DOWNLOAD_AUDIO', {})

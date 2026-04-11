@@ -34,6 +34,14 @@ const resolveTemperature = (envData: EnvData, defaultTemperature: number) => {
   return defaultTemperature
 }
 
+const resolvePromptTemplate = (envData: EnvData) => {
+  const customizedPrompt = envData.prompts?.[PROMPT_TYPE_SUMMARIZE_BRIEF]
+  if (typeof customizedPrompt === 'string' && customizedPrompt.trim().length > 0) {
+    return customizedPrompt
+  }
+  return PROMPT_DEFAULTS[PROMPT_TYPE_SUMMARIZE_BRIEF]
+}
+
 const useTranslate = () => {
   const dispatch = useAppDispatch()
   const envData = useAppSelector(state => state.env.envData)
@@ -58,12 +66,16 @@ const useTranslate = () => {
       for (const item of segment.items) {
         subtitles += formatTime(item.from) + ' ' + item.content + '\n'
       }
-      let prompt: string = envData.prompts?.[PROMPT_TYPE_SUMMARIZE_BRIEF]??PROMPT_DEFAULTS[PROMPT_TYPE_SUMMARIZE_BRIEF]
+      let prompt = resolvePromptTemplate(envData)
       // replace params
       prompt = prompt.replaceAll('{{language}}', summarizeLanguage.name)
       prompt = prompt.replaceAll('{{title}}', title??'')
       prompt = prompt.replaceAll('{{subtitles}}', subtitles)
       prompt = prompt.replaceAll('{{segment}}', segment.text)
+      if (!prompt.trim()) {
+        toast.error('Prompt template is empty')
+        return
+      }
 
       const taskDef: TaskDef = {
         type: 'chatComplete',

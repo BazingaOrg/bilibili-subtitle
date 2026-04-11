@@ -1,4 +1,4 @@
-import React, {useCallback, useContext, useEffect} from 'react'
+import React, {useCallback, useContext} from 'react'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import Header from '../components/Header'
 import Body from '../components/Body'
@@ -6,10 +6,11 @@ import useSubtitleService from '../hooks/useSubtitleService'
 import {EVENT_EXPAND} from '../consts/const'
 import {EventBusContext} from '../Router'
 import useTranslateService from '../hooks/useTranslateService'
-import {setTheme} from '../utils/bizUtil'
 import useSearchService from '../hooks/useSearchService'
 import {setFold} from '../redux/envReducer'
 import { useMessage } from '@/hooks/useMessageService'
+import {isDarkMode} from '@/utils/env_util'
+import classNames from 'classnames'
 
 function App() {
   const dispatch = useAppDispatch()
@@ -18,6 +19,9 @@ function App() {
   const eventBus = useContext(EventBusContext)
   const totalHeight = useAppSelector(state => state.env.totalHeight)
   const {sendInject} = useMessage(!!envData.sidePanel)
+  const isDarkTheme = envData.theme === 'dark' || ((envData.theme == null || envData.theme === 'system') && isDarkMode())
+  const darkHeaderBackground = 'hsl(230 18% 14%)'
+  const darkBodyBackground = 'hsl(230 12% 10%)'
 
   const foldCallback = useCallback(() => {
     dispatch(setFold(!fold))
@@ -33,20 +37,19 @@ function App() {
     }
   })
 
-  // theme改变时，设置主题
-  useEffect(() => {
-    setTheme(envData.theme)
-  }, [envData.theme])
-
   useSubtitleService()
   useTranslateService()
   useSearchService()
 
-  return <div className='select-none w-full' style={{
+  return <div className={classNames(
+    'select-none w-full subtitle-shell',
+    isDarkTheme ? 'bg-[hsl(230_12%_10%)]' : 'bg-white'
+  )} style={{
     height: fold?undefined:`${totalHeight}px`,
+    border: isDarkTheme ? `1px solid ${darkBodyBackground}` : '1px solid #f1f2f3',
   }}>
-    <Header foldCallback={foldCallback}/>
-    {!fold && <Body/>}
+    <Header foldCallback={foldCallback} isDarkTheme={isDarkTheme} darkHeaderBackground={darkHeaderBackground}/>
+    {!fold && <Body isDarkTheme={isDarkTheme} darkBodyBackground={darkBodyBackground}/>}
   </div>
 }
 

@@ -33,7 +33,8 @@ import RateExtension from '../components/RateExtension'
 import ApiKeyReminder from './ApiKeyReminder'
 import { useMessaging } from '../message'
 
-const Body = () => {
+const Body = (props: { isDarkTheme: boolean, darkBodyBackground: string }) => {
+  const {isDarkTheme, darkBodyBackground} = props
   const dispatch = useAppDispatch()
   const inputting = useAppSelector(state => state.env.inputting)
   const noVideo = useAppSelector(state => state.env.noVideo)
@@ -150,7 +151,9 @@ const Body = () => {
     }
   }, [autoScroll, checkAutoScroll, curOffsetTop, dispatch, floatKeyPointsSegIdx, needScroll, totalHeight])
 
-  return <div className='relative'>
+  return <div className='relative' style={{
+    backgroundColor: isDarkTheme ? darkBodyBackground : '#ffffff',
+  }}>
     {/* title */}
     <div className='absolute top-1 left-6 flex-center gap-1'>
       <AiOutlineAim className='cursor-pointer' onClick={posCallback} title='滚动到视频位置' />

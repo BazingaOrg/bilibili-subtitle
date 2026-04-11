@@ -9,8 +9,10 @@ import {parseTranscript} from '../utils/bizUtil'
 
 const Header = (props: {
   foldCallback: () => void
+  isDarkTheme: boolean
+  darkHeaderBackground: string
 }) => {
-  const {foldCallback} = props
+  const {foldCallback, isDarkTheme, darkHeaderBackground} = props
   const dispatch = useAppDispatch()
   const infos = useAppSelector(state => state.env.infos)
   const curInfo = useAppSelector(state => state.env.curInfo)
@@ -77,7 +79,11 @@ const Header = (props: {
     upload()
   }, [upload])
 
-  return <div className='rounded-[6px] bg-[#f1f2f3] dark:bg-base-100 h-[44px] flex justify-between items-center cursor-pointer' onClick={() => {
+  return <div className={classNames(
+    'h-[44px] flex justify-between items-center cursor-pointer'
+  )} style={{
+    backgroundColor: isDarkTheme ? darkHeaderBackground : '#f1f2f3',
+  }} onClick={() => {
     if (!envData.sidePanel) {
       foldCallback()
     }

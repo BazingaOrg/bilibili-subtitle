@@ -81,9 +81,15 @@ const debug = (...args: any[]) => {
       iframe.id = IFRAME_ID
       iframe.src = chrome.runtime.getURL('index.html')
       iframe.style.border = 'none'
+      iframe.style.display = 'block'
       iframe.style.width = '100%'
       iframe.style.height = '44px'
       iframe.style.marginBottom = '3px'
+      iframe.style.borderRadius = '6px'
+      iframe.style.overflow = 'hidden'
+      iframe.style.background = 'transparent'
+      iframe.style.clipPath = 'inset(0 round 6px)'
+      iframe.style.setProperty('-webkit-mask-image', '-webkit-radial-gradient(white, black)')
       iframe.allow = 'clipboard-read; clipboard-write;'
 
       if (vKey) {

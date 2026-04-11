@@ -5,8 +5,13 @@
 :root {
   font-size: 16px;
 }
+
+html,
 body {
+  margin: 0;
+  padding: 0;
   font-size: 100%;
+  background: transparent;
 }
 
 #bilibili-subtitle {
@@ -25,4 +30,18 @@ body {
 
 .flex-center {
   @apply flex items-center;
+}
+
+/**
+ * Why this shell exists:
+ * Rounded corners can show color bleeding when this widget overlays arbitrary page backgrounds.
+ * We use clipping + isolate + mask to force crisp corners in both Chromium side panel and in-page injection.
+ * Ref: https://stackoverflow.com/questions/49066011/overflow-hidden-with-border-radius-not-working-on-safari
+ */
+.subtitle-shell {
+  border-radius: 6px;
+  overflow: hidden;
+  isolation: isolate;
+  clip-path: inset(0 round 6px);
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 }

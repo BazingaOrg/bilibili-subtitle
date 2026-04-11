@@ -7,7 +7,6 @@ import {
   LANGUAGES,
   MODEL_DEFAULT,
   MODEL_MAP,
-  MODELS,
   PROMPT_TYPES,
   SUMMARIZE_LANGUAGE_DEFAULT,
   WORDS_RATE,
@@ -57,6 +56,8 @@ const FormItem = (props: {
   )
 }
 
+type ModelDiscoveryStatus = 'idle' | 'loading' | 'success' | 'error'
+
 const OptionsPage = () => {
   const dispatch = useAppDispatch()
   const envData = useAppSelector(state => state.env.envData)
@@ -75,6 +76,9 @@ const OptionsPage = () => {
   const [modelValue, { onChange: onChangeModelValue }] = useEventTarget({initialValue: envData.model??MODEL_DEFAULT})
   const [customModelValue, { onChange: onChangeCustomModelValue }] = useEventTarget({initialValue: envData.customModel})
   const [customModelTokensValue, setCustomModelTokensValue] = useState(envData.customModelTokens)
+  const [discoveredModelsValue, setDiscoveredModelsValue] = useState<string[]>(envData.discoveredModels ?? [])
+  const [modelDiscoveryStatus, setModelDiscoveryStatus] = useState<ModelDiscoveryStatus>((envData.discoveredModels?.length ?? 0) > 0 ? 'success' : 'idle')
+  const [modelDiscoveryError, setModelDiscoveryError] = useState<string>()
   const [summarizeLanguageValue, { onChange: onChangeSummarizeLanguageValue }] = useEventTarget({initialValue: envData.summarizeLanguage??SUMMARIZE_LANGUAGE_DEFAULT})
   const [emailRecipientValue, { onChange: onChangeEmailRecipientValue }] = useEventTarget({initialValue: envData.emailRecipient ?? ''})
   const [emailWebhookUrlValue, { onChange: onChangeEmailWebhookUrlValue }] = useEventTarget({initialValue: envData.emailWebhookUrl ?? ''})
@@ -87,6 +91,27 @@ const OptionsPage = () => {
   const apiKeySetted = useMemo(() => {
     return !!apiKeyValue
   }, [apiKeyValue])
+  const modelOptions = useMemo(() => {
+    const selectedModel = (modelValue as string) ?? ''
+    const options: Array<{code: string, name: string}> = discoveredModelsValue.map(modelName => ({
+      code: modelName,
+      name: modelName,
+    }))
+
+    if (selectedModel && selectedModel !== 'custom' && !options.some(option => option.code === selectedModel)) {
+      options.unshift({
+        code: selectedModel,
+        name: selectedModel,
+      })
+    }
+
+    options.push({
+      code: 'custom',
+      name: '自定义',
+    })
+
+    return options
+  }, [discoveredModelsValue, modelValue])
 
   const triggerValueChange = useCallback((onChange: (event: any) => void, value: string) => {
     onChange({target: {value}})
@@ -102,6 +127,7 @@ const OptionsPage = () => {
       model: modelValue,
       customModel: customModelValue,
       customModelTokens: customModelTokensValue,
+      discoveredModels: discoveredModelsValue,
       theme: themeValue,
       summarizeEnable: summarizeEnableValue,
       emailAutoSendEnabled: emailAutoSendEnabledValue,
@@ -117,7 +143,7 @@ const OptionsPage = () => {
       cnSearchEnabled: cnSearchEnabledValue,
       chapterMode: chapterModeValue,
     }
-  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
+  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
 
   const applyFormEnvData = useCallback((nextEnvData: EnvData) => {
     setSidePanelChecked(nextEnvData.sidePanel)
@@ -135,6 +161,9 @@ const OptionsPage = () => {
     triggerValueChange(onChangeModelValue, nextEnvData.model ?? MODEL_DEFAULT)
     triggerValueChange(onChangeCustomModelValue, nextEnvData.customModel ?? '')
     setCustomModelTokensValue(nextEnvData.customModelTokens)
+    setDiscoveredModelsValue(nextEnvData.discoveredModels ?? [])
+    setModelDiscoveryStatus((nextEnvData.discoveredModels?.length ?? 0) > 0 ? 'success' : 'idle')
+    setModelDiscoveryError(undefined)
     triggerValueChange(onChangeSummarizeLanguageValue, nextEnvData.summarizeLanguage ?? SUMMARIZE_LANGUAGE_DEFAULT)
     triggerValueChange(onChangeEmailRecipientValue, nextEnvData.emailRecipient ?? '')
     triggerValueChange(onChangeEmailWebhookUrlValue, nextEnvData.emailWebhookUrl ?? '')
@@ -144,6 +173,34 @@ const OptionsPage = () => {
     setWordsValue(nextEnvData.words)
     setPromptsValue(nextEnvData.prompts ?? {})
   }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSearchEnabledChecked, setCnSearchEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
+
+  const discoverModelsAndApply = useCallback(async (nextModelValue?: string) => {
+    setModelDiscoveryStatus('loading')
+    setModelDiscoveryError(undefined)
+    const response = await sendExtension(null, 'DISCOVER_MODELS', {
+      serverUrl: serverUrlValue,
+      apiKey: apiKeyValue,
+    })
+    const models = response.models.filter(item => !!item)
+    if (models.length <= 0) {
+      throw new Error('No models returned from server')
+    }
+
+    setDiscoveredModelsValue(models)
+    setModelDiscoveryStatus('success')
+    setModelDiscoveryError(undefined)
+
+    let modelToUse = nextModelValue ?? modelValue
+    if (modelToUse !== 'custom' && !models.includes(modelToUse as string)) {
+      modelToUse = models[0]
+      triggerValueChange(onChangeModelValue, modelToUse)
+    }
+
+    return {
+      models,
+      model: modelToUse as string,
+    }
+  }, [apiKeyValue, modelValue, onChangeModelValue, sendExtension, serverUrlValue, triggerValueChange])
 
   const onExportConfig = useCallback(async () => {
     const passphrase = window.prompt('请输入用于加密导出配置的口令：')
@@ -215,19 +272,49 @@ const OptionsPage = () => {
     input.click()
   }, [applyFormEnvData, getFormEnvData])
 
-  const onSave = useCallback(() => {
-    dispatch(setEnvData(getFormEnvData()))
-    toast.success('保存成功')
+  const onSave = useCallback(async () => {
+    let nextModel = (modelValue as string) ?? MODEL_DEFAULT
+    let nextDiscoveredModels = discoveredModelsValue
+    try {
+      const modelResult = await discoverModelsAndApply(nextModel)
+      nextModel = modelResult.model
+      nextDiscoveredModels = modelResult.models
+    } catch (error: any) {
+      const errorMessage = error?.message ?? 'Unable to load model list from server'
+      setModelDiscoveryStatus('error')
+      setModelDiscoveryError(errorMessage)
+      toast.error('Model discovery failed, keep current model')
+    }
+
+    dispatch(setEnvData({
+      ...getFormEnvData(),
+      model: nextModel,
+      discoveredModels: nextDiscoveredModels,
+      modelDiscoveryUpdatedAt: Date.now(),
+    }))
+    toast.success('Saved')
     sendExtension(null, 'CLOSE_SIDE_PANEL')
     // 3秒后关闭
     setTimeout(() => {
       window.close()
     }, 3000)
-  }, [dispatch, getFormEnvData, sendExtension])
+  }, [discoverModelsAndApply, dispatch, discoveredModelsValue, getFormEnvData, modelValue, sendExtension])
 
   const onCancel = useCallback(() => {
     window.close()
   }, [])
+
+  const onRefreshModels = useCallback(async () => {
+    try {
+      await discoverModelsAndApply()
+      toast.success('Model list refreshed')
+    } catch (error: any) {
+      const errorMessage = error?.message ?? 'Unable to load model list from server'
+      setModelDiscoveryStatus('error')
+      setModelDiscoveryError(errorMessage)
+      toast.error('Model discovery failed')
+    }
+  }, [discoverModelsAndApply])
 
   const onSelTheme1 = useCallback(() => {
     setThemeValue('system')
@@ -296,8 +383,17 @@ const OptionsPage = () => {
         {<FormItem title='模型选择' htmlFor='modelSel' tip='注意，不同模型有不同价格与token限制'>
           <select id='modelSel' className="select select-sm select-bordered" value={modelValue}
                   onChange={onChangeModelValue}>
-            {MODELS.map(model => <option key={model.code} value={model.code}>{model.name}</option>)}
+            {modelOptions.map(model => <option key={model.code} value={model.code}>{model.name}</option>)}
           </select>
+        </FormItem>}
+        {<FormItem title='模型发现'>
+          <div className='flex items-center gap-2'>
+            <button className='btn btn-xs btn-outline' onClick={onRefreshModels} disabled={modelDiscoveryStatus === 'loading'}>
+              {modelDiscoveryStatus === 'loading' ? 'Loading...' : 'Refresh models'}
+            </button>
+            {modelDiscoveryStatus === 'success' && <span className='text-xs text-success'>已发现 {discoveredModelsValue.length} 个模型</span>}
+            {modelDiscoveryStatus === 'error' && <span className='text-xs text-error'>{modelDiscoveryError ?? 'Model discovery failed'}</span>}
+          </div>
         </FormItem>}
         {modelValue === 'custom' && <FormItem title='模型名' htmlFor='customModel'>
           <input id='customModel' type='text' className='input input-sm input-bordered w-full' placeholder='llama2'

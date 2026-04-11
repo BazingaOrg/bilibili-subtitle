@@ -76,20 +76,23 @@ export const getModelMaxTokens = (envData: EnvData) => {
 
 export const setTheme = (theme: EnvData['theme']) => {
   const appRoot = document.getElementById(APP_DOM_ID)
-  if (appRoot != null) {
-    // system
-    theme = theme ?? 'system'
-    if (!theme || theme === 'system') {
-      theme = isDarkMode() ? 'dark' : 'light'
-    }
+  const html = document.documentElement
+  const body = document.body
 
-    appRoot.setAttribute('data-theme', theme)
+  theme = theme ?? 'system'
+  if (!theme || theme === 'system') {
+    theme = isDarkMode() ? 'dark' : 'light'
+  }
+
+  const targets = [html, body, appRoot].filter((item): item is HTMLElement => item != null)
+  for (const target of targets) {
+    target.setAttribute('data-theme', theme)
     if (theme === 'dark') {
-      appRoot.classList.add('dark')
-      appRoot.classList.remove('light')
+      target.classList.add('dark')
+      target.classList.remove('light')
     } else {
-      appRoot.classList.add('light')
-      appRoot.classList.remove('dark')
+      target.classList.add('light')
+      target.classList.remove('dark')
     }
   }
 }

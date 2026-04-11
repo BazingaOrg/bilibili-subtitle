@@ -12,6 +12,8 @@ const ENV_DATA_KEYS: Array<keyof EnvData> = [
   'model',
   'customModel',
   'customModelTokens',
+  'discoveredModels',
+  'modelDiscoveryUpdatedAt',
   'summarizeEnable',
   'summarizeLanguage',
   'words',
@@ -44,8 +46,11 @@ export const sanitizeEnvData = (data?: EnvData): EnvData | undefined => {
   }
 
   if (nextData.prompts != null) {
+    const summaryPrompt = nextData.prompts[PROMPT_TYPE_SUMMARIZE_BRIEF]
     nextData.prompts = {
-      [PROMPT_TYPE_SUMMARIZE_BRIEF]: nextData.prompts[PROMPT_TYPE_SUMMARIZE_BRIEF] ?? PROMPT_DEFAULTS[PROMPT_TYPE_SUMMARIZE_BRIEF],
+      [PROMPT_TYPE_SUMMARIZE_BRIEF]: (typeof summaryPrompt === 'string' && summaryPrompt.trim().length > 0)
+        ? summaryPrompt
+        : PROMPT_DEFAULTS[PROMPT_TYPE_SUMMARIZE_BRIEF],
     }
   }
 

@@ -42,6 +42,13 @@ export interface ExportConfigV1 {
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()
 
+const stripTransientEnvData = (envData: EnvData): EnvData => {
+  const nextEnvData: EnvData = {...envData}
+  delete nextEnvData.discoveredModels
+  delete nextEnvData.modelDiscoveryUpdatedAt
+  return nextEnvData
+}
+
 const toBase64 = (data: ArrayBuffer | Uint8Array): string => {
   const bytes = data instanceof Uint8Array ? data : new Uint8Array(data)
   let binary = ''
@@ -122,7 +129,7 @@ export const exportConfigFilename = () => 'bilibili-subtitle-config.v1.json'
 export const encryptEnvDataForExport = async (envData: EnvData, passphrase: string): Promise<ExportConfigV1> => {
   ensurePassphrase(passphrase)
 
-  const sanitized = sanitizeEnvData(envData) ?? {}
+  const sanitized = sanitizeEnvData(stripTransientEnvData(envData)) ?? {}
   const plainText = JSON.stringify(sanitized)
   const plainBytes = textEncoder.encode(plainText)
   const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH))
@@ -187,7 +194,7 @@ export const decryptEnvDataFromImport = async (rawText: string, passphrase: stri
     throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容不是合法 JSON')
   }
 
-  const sanitized = sanitizeEnvData(envData as EnvData)
+  const sanitized = sanitizeEnvData(stripTransientEnvData(envData as EnvData))
   if (sanitized == null) {
     throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容为空')
   }

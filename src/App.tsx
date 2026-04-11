@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo} from 'react'
+import React, {useCallback, useEffect, useMemo} from 'react'
 import 'tippy.js/dist/tippy.css'
 import {useAppDispatch, useAppSelector} from './hooks/redux'
 import {setEnvData, setEnvReady, setTempData, setTempReady} from './redux/envReducer'
@@ -11,6 +11,7 @@ import useMessageService from './hooks/useMessageService'
 import MainPage from './pages/MainPage'
 import useLocalStorage from './hooks/useLocalStorage'
 import {sanitizeEnvData, sanitizeTempData} from './utils/envSanitizer'
+import {setTheme} from './utils/bizUtil'
 
 function App() {
   const dispatch = useAppDispatch()
@@ -48,6 +49,10 @@ function App() {
 
   // services
   useMessageService()
+
+  useEffect(() => {
+    setTheme(envData.theme)
+  }, [envData.theme])
 
   return <div>
     <Toaster position={path === 'app'?'bottom-center':'top-center'}/>

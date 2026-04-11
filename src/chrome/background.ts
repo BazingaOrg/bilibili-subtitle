@@ -3,6 +3,7 @@ import {handleTask, initTaskService, tasksMap} from './taskService'
 import { DEFAULT_USE_PORT, STORAGE_ENV} from '@/consts/const'
 import { AllExtensionMessages } from '@/message-typings'
 import { ExtensionMessaging, TAG_TARGET_INJECT } from '../message'
+import {discoverModels} from './openaiService'
 
 const setBadgeOk = async (tabId: number, ok: boolean) => {
   await chrome.action.setBadgeText({
@@ -120,6 +121,12 @@ const methods: {
         error: error?.name === 'AbortError' ? 'Webhook request timeout' : (error?.message ?? 'Unknown webhook error'),
       }
     }
+  },
+  DISCOVER_MODELS: async (params, context) => {
+    return await discoverModels({
+      serverUrl: params.serverUrl,
+      apiKey: params.apiKey,
+    })
   },
 }
 // 初始化backgroundMessage

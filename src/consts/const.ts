@@ -83,22 +83,39 @@ export const DEFAULT_SERVER_URL_OPENAI = 'https://api.openai.com'
 export const DEFAULT_SERVER_URL_GEMINI = 'https://generativelanguage.googleapis.com/v1beta/openai/'
 export const CUSTOM_MODEL_TOKENS = 16385
 
-export const MODELS = [{
-  code: 'gpt-4o-mini',
-  name: 'gpt-4o-mini',
-  tokens: 128000,
-}, {
-  code: 'gpt-3.5-turbo-0125',
-  name: 'gpt-3.5-turbo-0125',
-  tokens: 16385,
-}, {
+export interface ModelConfig {
+  code: string
+  name: string
+  tokens?: number
+}
+
+export const MODELS: ModelConfig[] = [{
   code: 'custom',
   name: '自定义',
 }]
+
+/**
+ * Keep token metadata for known models so request sizing remains stable
+ * even when model dropdown is driven by runtime discovery.
+ */
+export const KNOWN_MODEL_TOKENS: Record<string, number> = {
+  'gpt-4o-mini': 128000,
+  'gpt-3.5-turbo-0125': 16385,
+  'gpt-4o': 128000,
+  'gpt-4.1-mini': 128000,
+}
+
 export const MODEL_DEFAULT = MODELS[0].code
-export const MODEL_MAP: {[key: string]: typeof MODELS[number]} = {}
+export const MODEL_MAP: {[key: string]: ModelConfig} = {}
 for (const model of MODELS) {
   MODEL_MAP[model.code] = model
+}
+for (const [modelCode, modelTokens] of Object.entries(KNOWN_MODEL_TOKENS)) {
+  MODEL_MAP[modelCode] = {
+    code: modelCode,
+    name: modelCode,
+    tokens: modelTokens,
+  }
 }
 
 export const LANGUAGES = [{

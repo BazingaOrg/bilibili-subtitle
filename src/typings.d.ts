@@ -17,6 +17,8 @@ interface EnvData {
   model?: string
   customModel?: string
   customModelTokens?: number
+  discoveredModels?: string[]
+  modelDiscoveryUpdatedAt?: number
 
   summarizeEnable?: boolean
   summarizeLanguage?: string

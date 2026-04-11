@@ -52,7 +52,16 @@ interface ExtensionSendSummaryEmailMessage extends ExtensionMessage<{
   method: 'SEND_SUMMARY_EMAIL'
 }
 
-export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage
+interface ExtensionDiscoverModelsMessage extends ExtensionMessage<{
+  serverUrl?: string
+  apiKey?: string
+}, {
+  models: string[]
+}> {
+  method: 'DISCOVER_MODELS'
+}
+
+export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionDiscoverModelsMessage
 
 // inject
 interface InjectToggleDisplayMessage extends InjectMessage<{}> {

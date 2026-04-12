@@ -6,7 +6,7 @@ import { useMessage } from './useMessageService'
 import dayjs from 'dayjs'
 import toast from 'react-hot-toast'
 import { setTempData } from '@/redux/envReducer'
-import { useRef } from 'react'
+import { createElement, useRef } from 'react'
 import {logMessagingError} from '@/utils/messageError'
 
 /**
@@ -31,6 +31,30 @@ const useTranslateService = () => {
   const lastSummarizeTime = useAppSelector(state => state.env.lastSummarizeTime)
   const {getTask} = useTranslate()
   const {sendExtension} = useMessage(Boolean(envData.sidePanel))
+
+  const showDismissibleToast = useMemoizedFn((params: {
+    id: string
+    message: string
+    icon: '✅' | '❌'
+  }) => {
+    const {id, message, icon} = params
+    toast((toastInstance) => createElement('div', {
+      onClick: () => toast.dismiss(toastInstance.id),
+      style: {cursor: 'pointer'},
+      role: 'button',
+      tabIndex: 0,
+      onKeyDown: (event: KeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          toast.dismiss(toastInstance.id)
+        }
+      },
+    }, message), {
+      id,
+      duration: Infinity,
+      icon,
+    })
+  })
 
   const tryAutoSendSummaryEmail = useMemoizedFn(async () => {
     if (envData.emailAutoSendEnabled !== true) {
@@ -63,9 +87,10 @@ const useTranslateService = () => {
     }
     if (summaryDoneVideoKeyRef.current !== videoKey) {
       summaryDoneVideoKeyRef.current = videoKey
-      toast.success('当前视频分段总结已全部完成（点击可关闭）', {
+      showDismissibleToast({
         id: `${summaryDoneToastIdPrefix}${videoKey}`,
-        duration: Infinity,
+        icon: '✅',
+        message: '当前视频分段总结已全部完成（点击可关闭）',
       })
     }
 
@@ -75,9 +100,10 @@ const useTranslateService = () => {
     })
     if (!hasSuccessSummary) {
       dispatch(setTempData({ summaryEmailSentVideoKey: videoKey }))
-      toast.error('没有可发送的有效总结，已跳过自动邮件（点击可关闭）', {
+      showDismissibleToast({
         id: `${emailToastIdPrefix}${videoKey}`,
-        duration: Infinity,
+        icon: '❌',
+        message: '没有可发送的有效总结，已跳过自动邮件（点击可关闭）',
       })
       return
     }
@@ -116,18 +142,20 @@ const useTranslateService = () => {
       if (response.ok) {
         dispatch(setTempData({ summaryEmailSentVideoKey: videoKey }))
         retryAtMapRef.current[videoKey] = 0
-        toast.success('总结邮件发送成功（点击可关闭）', {
+        showDismissibleToast({
           id: `${emailToastIdPrefix}${videoKey}`,
-          duration: Infinity,
+          icon: '✅',
+          message: '总结邮件发送成功（点击可关闭）',
         })
       } else {
         // Retry later instead of permanently suppressing this video.
         retryAtMapRef.current[videoKey] = Date.now() + 10 * 1000
         if (Date.now() - lastErrorToastAtRef.current >= 10 * 1000) {
           lastErrorToastAtRef.current = Date.now()
-          toast.error(`总结邮件发送失败：${response.error ?? '未知错误'}（点击可关闭）`, {
+          showDismissibleToast({
             id: `${emailToastIdPrefix}${videoKey}`,
-            duration: Infinity,
+            icon: '❌',
+            message: `总结邮件发送失败：${response.error ?? '未知错误'}（点击可关闭）`,
           })
         }
       }

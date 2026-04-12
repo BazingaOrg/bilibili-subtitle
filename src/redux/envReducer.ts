@@ -41,9 +41,6 @@ interface EnvState {
    */
   inputting: boolean
 
-  searchText: string
-  searchResult: Record<string, boolean>
-
   // 当前视频是否计算过操作
   reviewAction: boolean
 }
@@ -55,7 +52,6 @@ const initialState: EnvState = {
     emailAutoSendEnabled: false,
     autoExpand: true,
     theme: 'light',
-    searchEnabled: true,
   },
   tempData: {
   },
@@ -66,9 +62,6 @@ const initialState: EnvState = {
   fold: true,
 
   inputting: false,
-
-  searchText: '',
-  searchResult: {},
 
   reviewAction: false,
 }
@@ -101,12 +94,6 @@ export const slice = createSlice({
     setTempReady: (state) => {
       state.tempReady = true
     },
-    setSearchText: (state, action: PayloadAction<string>) => {
-      state.searchText = action.payload
-    },
-    setSearchResult: (state, action: PayloadAction<Record<string, boolean>>) => {
-      state.searchResult = action.payload
-    },
     setFloatKeyPointsSegIdx: (state, action: PayloadAction<number | undefined>) => {
       state.floatKeyPointsSegIdx = action.payload
     },
@@ -135,8 +122,8 @@ export const slice = createSlice({
     }>) => {
       const segment = find(state.segments, {startIdx: action.payload.segmentStartIdx})
       if (segment != null) {
-        let summary = segment.summaries[action.payload.type]
-        if (!summary) {
+        let summary = segment.summaries[action.payload.type] as Summary | undefined
+        if (summary == null) {
           summary = {
             type: action.payload.type,
             status: 'done',
@@ -155,8 +142,8 @@ export const slice = createSlice({
     }>) => {
       const segment = find(state.segments, {startIdx: action.payload.segmentStartIdx})
       if (segment != null) {
-        let summary = segment.summaries[action.payload.type]
-        if (summary) {
+        let summary = segment.summaries[action.payload.type] as Summary | undefined
+        if (summary != null) {
           summary.status = action.payload.status
         } else {
           summary = {
@@ -174,8 +161,8 @@ export const slice = createSlice({
     }>) => {
       const segment = find(state.segments, {startIdx: action.payload.segmentStartIdx})
       if (segment != null) {
-        let summary = segment.summaries[action.payload.type]
-        if (summary) {
+        let summary = segment.summaries[action.payload.type] as Summary | undefined
+        if (summary != null) {
           summary.error = action.payload.error
         } else {
           summary = {
@@ -289,8 +276,6 @@ export const {
   setCurFetched,
   setData,
   setFold,
-  setSearchText,
-  setSearchResult,
   setInputting,
   setCtime,
   setAuthor,

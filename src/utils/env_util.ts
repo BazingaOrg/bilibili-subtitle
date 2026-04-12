@@ -1,5 +1,5 @@
 export const openUrl = (url?: string, target?: string, features?: string) => {
-  if (url) {
+  if (typeof url === 'string' && url.length > 0) {
     window.open(url, target, features)
   }
 }

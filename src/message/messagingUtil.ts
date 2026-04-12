@@ -5,7 +5,7 @@ export const sendHandshakeFromApp = (pmh: Layer1Protocol) => {
   // 初始化
   // get tabId from url params
   const tabIdStr = window.location.search.split('tabId=')[1]
-  const tabId = tabIdStr ? parseInt(tabIdStr) : undefined
+  const tabId = typeof tabIdStr === 'string' && tabIdStr.length > 0 ? parseInt(tabIdStr) : undefined
   pmh.sendMessage({
     from: 'app',
     target: 'extension',

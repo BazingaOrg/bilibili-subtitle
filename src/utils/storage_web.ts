@@ -5,7 +5,7 @@ import {IStorage} from './storage'
  */
 export default class StorageWeb implements IStorage {
   async setStore(key: string, data?: string) {
-    if (data) {
+    if (typeof data === 'string') {
       localStorage.setItem(key, data)
     } else {
       localStorage.removeItem(key)
@@ -24,7 +24,7 @@ export default class StorageWeb implements IStorage {
     const result: string[] = []
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i)
-      if (key) {
+      if (key !== null) {
         result.push(key)
       }
     }

@@ -34,10 +34,6 @@ interface EnvData {
   // chapter
   chapterMode?: boolean // 是否启用章节模式，undefined/null/true表示启用，false表示禁用
 
-  // search
-  searchEnabled?: boolean
-  cnSearchEnabled?: boolean
-
   prompts?: {
     [key: string]: string
   }

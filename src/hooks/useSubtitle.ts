@@ -9,7 +9,7 @@ const useSubtitle = () => {
   const reviewed = useAppSelector(state => state.env.tempData.reviewed)
   const reviewAction = useAppSelector(state => state.env.reviewAction)
   const reviewActions = useAppSelector(state => state.env.tempData.reviewActions)
-  const {sendInject} = useMessage(!!envData.sidePanel)
+  const {sendInject} = useMessage(Boolean(envData.sidePanel))
 
   const move = useCallback((time: number, togglePause: boolean) => {
     sendInject(null, 'MOVE', {time, togglePause}).catch(error => {

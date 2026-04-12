@@ -28,7 +28,7 @@ const Header = (props: {
       const reader = new FileReader()
       reader.onload = (e) => {
         const text = e.target?.result
-        if (text) {
+        if (typeof text === 'string' && text.length > 0) {
           const infos_ = [...(infos??[])]
           // const blob = new Blob([text], {type: 'text/plain'})
           // const url = URL.createObjectURL(blob)
@@ -60,7 +60,7 @@ const Header = (props: {
     const tarInfo = find(infos, {subtitle_url: e.target.value})
     if (curInfo?.id !== tarInfo?.id) {
       dispatch(setCurInfo(tarInfo))
-      if (tarInfo && tarInfo.subtitle_url === 'uploaded') {
+      if (tarInfo != null && tarInfo.subtitle_url === 'uploaded') {
         dispatch(setCurFetched(true))
         dispatch(setData(uploadedTranscript))
       } else {
@@ -83,12 +83,11 @@ const Header = (props: {
   )} style={{
     boxShadow: isDarkTheme ? 'inset 0 -1px 0 rgba(255,255,255,0.05)' : 'inset 0 -1px 0 rgba(0,0,0,0.03)',
   }} onClick={() => {
-    if (!envData.sidePanel) {
+    if (envData.sidePanel !== true) {
       foldCallback()
     }
   }}>
     <div className='shrink-0 flex items-center'>
-      {/* <img src="bibijun.png" alt="Logo" className="w-auto h-6 ml-2 mr-1" /> */}
       <span className='shrink-0 text-[15px] font-medium pl-[16px] pr-[14px]'>字幕列表</span>
       <MoreBtn placement={'right-start'}/>
     </div>
@@ -98,11 +97,11 @@ const Header = (props: {
           <button className='btn btn-xs btn-link' onClick={onUpload}>上传(vtt/srt)</button>
           (未找到字幕)
       </div>
-        :<select disabled={!infos || infos.length <= 0} className='select select-ghost select-xs line-clamp-1 border border-base-300 bg-base-100' value={curInfo?.subtitle_url} onChange={selectCallback} onClick={preventCallback}>
+        :<select disabled={infos == null || infos.length <= 0} className='select select-ghost select-xs line-clamp-1 border border-base-300 bg-base-100' value={curInfo?.subtitle_url} onChange={selectCallback} onClick={preventCallback}>
           {infos?.map((item: any) => <option key={item.id} value={item.subtitle_url}>{item.lan_doc}</option>)}
           <option key='upload' value='upload'>上传(vtt/srt)</option>
         </select>}
-      {!envData.sidePanel && <IoIosArrowUp className={classNames('shrink-0 desc transform ease-in duration-300', fold?'rotate-180':'')}/>}
+      {envData.sidePanel !== true && <IoIosArrowUp className={classNames('shrink-0 desc transform ease-in duration-300', fold ? 'rotate-180' : '')}/>}
     </div>
   </div>
 }

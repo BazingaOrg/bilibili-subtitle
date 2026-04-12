@@ -13,9 +13,9 @@ let l1protocolInit: boolean = false
 let l1protocol: Layer1Protocol<L2ReqMsg, L2ResMsg> | undefined
 // let postInjectMessage: (method: string, params: PostMessagePayload) => Promise<PostMessageResponse> | undefined
 
-export const msgWaiter = new Waiter<Layer1Protocol<L2ReqMsg, L2ResMsg>>(() => ({
-  finished: l1protocolInit,
-  data: l1protocol!,
+export const msgWaiter = new Waiter<Layer1Protocol<L2ReqMsg, L2ResMsg> | undefined>(() => ({
+  finished: l1protocolInit && l1protocol != null,
+  data: l1protocol,
 }), 100, 15000)
 
 const useMessagingService = <AllAPPMessagesType extends AppMessage>(usePort: boolean, methodsFunc?: () => {
@@ -79,11 +79,13 @@ const useMessagingService = <AllAPPMessagesType extends AppMessage>(usePort: boo
 
   // port
   useAsyncEffect(async () => {
-    if (messageHandler && usePort) {
+    if (usePort) {
       l1protocol = new Layer1Protocol<L2ReqMsg, L2ResMsg>(messageHandler)
       // 初始化
-      sendHandshakeFromApp(l1protocol)
-      l1protocolInit = true
+      if (l1protocol != null) {
+        sendHandshakeFromApp(l1protocol)
+        l1protocolInit = true
+      }
     }
   }, [messageHandler, usePort])
 }

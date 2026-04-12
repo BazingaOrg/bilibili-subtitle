@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef} from 'react'
+import React, {useCallback, useEffect, useRef} from 'react'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import useSubtitle from '../hooks/useSubtitle'
 import {setCheckAutoScroll, setCurOffsetTop, setNeedScroll} from '../redux/envReducer'
@@ -19,18 +19,9 @@ const SegmentItem = (props: {
   const {move} = useSubtitle()
 
   const compact = useAppSelector(state => state.env.tempData.compact)
-  const searchText = useAppSelector(state => state.env.searchText)
-  const searchResult = useAppSelector(state => state.env.searchResult)
-  const display = useMemo(() => {
-    if (searchText) {
-      return searchResult[item.idx+''] ? 'inline' : 'none'
-    } else {
-      return 'inline'
-    }
-  }, [item.idx, searchResult, searchText])
 
   const moveCallback = useCallback((event: any) => {
-    if (event.altKey) { // 复制
+    if (event.altKey === true) { // 复制
       navigator.clipboard.writeText(item.content).catch(console.error)
     } else {
       move(item.from, false)
@@ -38,7 +29,7 @@ const SegmentItem = (props: {
   }, [item.content, item.from, move])
 
   const move2Callback = useCallback((event: any) => {
-    if (event.altKey) { // 复制
+    if (event.altKey === true) { // 复制
       navigator.clipboard.writeText(item.content).catch(console.error)
     } else {
       move(item.from, true)
@@ -47,7 +38,7 @@ const SegmentItem = (props: {
 
   // 检测需要滚动进入视野
   useEffect(() => {
-    if (needScroll) {
+    if (needScroll === true) {
       bodyRef.current.scrollTop = ref.current.offsetTop - bodyRef.current.offsetTop - 40
       dispatch(setNeedScroll(false))
     }
@@ -61,10 +52,8 @@ const SegmentItem = (props: {
     }
   }, [dispatch, isIn])
 
-  return <span ref={ref} style={{
-    display
-  }}>
-    {compact
+  return <span ref={ref}>
+    {compact === true
       ? <CompactSegmentItem
         item={item}
         idx={idx}

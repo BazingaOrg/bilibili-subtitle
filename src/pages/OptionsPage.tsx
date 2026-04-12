@@ -14,7 +14,7 @@ import {
 import {IoWarning} from 'react-icons/all'
 import classNames from 'classnames'
 import toast from 'react-hot-toast'
-import {useBoolean, useEventTarget} from 'ahooks'
+import {useEventTarget} from 'ahooks'
 import { FaChevronDown, FaChevronUp } from 'react-icons/fa'
 import { useMessage } from '@/hooks/useMessageService'
 import useEventChecked from '@/hooks/useEventChecked'
@@ -44,10 +44,11 @@ const FormItem = (props: {
   htmlFor?: string
 } & PropsWithChildren) => {
   const {title, tip, htmlFor, children} = props
+  const hasTip = typeof tip === 'string' && tip.length > 0
   return (
     <div className='flex items-center gap-4 mb-2'>
-      <div className={classNames('w-1/3 text-right', tip && 'tooltip tooltip-right z-50')} data-tip={tip}>
-        <label className={classNames('font-medium text-base-content/90', tip && 'border-b border-dotted border-current pb-[2px]')} htmlFor={htmlFor}>{title}</label>
+      <div className={classNames('w-1/3 text-right', hasTip && 'tooltip tooltip-right z-50')} data-tip={tip}>
+        <label className={classNames('font-medium text-base-content/90', hasTip && 'border-b border-dotted border-current pb-[2px]')} htmlFor={htmlFor}>{title}</label>
       </div>
       <div className='w-2/3'>
         {children}
@@ -63,12 +64,10 @@ const OptionsPage = () => {
   const envData = useAppSelector(state => state.env.envData)
   const {sendExtension} = useMessage(false)
   const {value: sidePanelValue, setValue: setSidePanelChecked, onChange: setSidePanelValue} = useEventChecked(envData.sidePanel)
-  const {value: autoInsertValue, setValue: setAutoInsertChecked, onChange: setAutoInsertValue} = useEventChecked(!envData.manualInsert)
+  const {value: autoInsertValue, setValue: setAutoInsertChecked, onChange: setAutoInsertValue} = useEventChecked(envData.manualInsert !== true)
   const {value: autoExpandValue, setValue: setAutoExpandChecked, onChange: setAutoExpandValue} = useEventChecked(envData.autoExpand)
   const {value: summarizeEnableValue, setValue: setSummarizeEnableChecked, onChange: setSummarizeEnableValue} = useEventChecked(envData.summarizeEnable)
   const {value: emailAutoSendEnabledValue, setValue: setEmailAutoSendEnabledChecked, onChange: setEmailAutoSendEnabledValue} = useEventChecked(envData.emailAutoSendEnabled)
-  const {value: searchEnabledValue, setValue: setSearchEnabledChecked, onChange: setSearchEnabledValue} = useEventChecked(envData.searchEnabled)
-  const {value: cnSearchEnabledValue, setValue: setCnSearchEnabledChecked, onChange: setCnSearchEnabledValue} = useEventChecked(envData.cnSearchEnabled)
   const {value: summarizeFloatValue, setValue: setSummarizeFloatChecked, onChange: setSummarizeFloatValue} = useEventChecked(envData.summarizeFloat)
   const {value: chapterModeValue, setValue: setChapterModeChecked, onChange: setChapterModeValue} = useEventChecked(envData.chapterMode ?? true)
   const [apiKeyValue, { onChange: onChangeApiKeyValue }] = useEventTarget({initialValue: envData.apiKey??''})
@@ -86,10 +85,9 @@ const OptionsPage = () => {
   const [themeValue, setThemeValue] = useState(envData.theme)
   const [fontSizeValue, setFontSizeValue] = useState(envData.fontSize)
   const [wordsValue, setWordsValue] = useState<number | undefined>(envData.words)
-  const [promptsFold, {toggle: togglePromptsFold}] = useBoolean(true)
   const [promptsValue, setPromptsValue] = useState<{[key: string]: string}>(envData.prompts??{})
   const apiKeySetted = useMemo(() => {
-    return !!apiKeyValue
+    return typeof apiKeyValue === 'string' && apiKeyValue.length > 0
   }, [apiKeyValue])
   const modelOptions = useMemo(() => {
     const selectedModel = (modelValue as string) ?? ''
@@ -98,7 +96,7 @@ const OptionsPage = () => {
       name: modelName,
     }))
 
-    if (selectedModel && selectedModel !== 'custom' && !options.some(option => option.code === selectedModel)) {
+    if (selectedModel.length > 0 && selectedModel !== 'custom' && !options.some(option => option.code === selectedModel)) {
       options.unshift({
         code: selectedModel,
         name: selectedModel,
@@ -120,7 +118,7 @@ const OptionsPage = () => {
   const getFormEnvData = useCallback((): EnvData => {
     return {
       sidePanel: sidePanelValue,
-      manualInsert: !autoInsertValue,
+      manualInsert: autoInsertValue !== true,
       autoExpand: autoExpandValue,
       apiKey: apiKeyValue,
       serverUrl: serverUrlValue,
@@ -139,11 +137,9 @@ const OptionsPage = () => {
       words: wordsValue,
       fontSize: fontSizeValue,
       prompts: promptsValue,
-      searchEnabled: searchEnabledValue,
-      cnSearchEnabled: cnSearchEnabledValue,
       chapterMode: chapterModeValue,
     }
-  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, searchEnabledValue, cnSearchEnabledValue, chapterModeValue])
+  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, wordsValue, fontSizeValue, promptsValue, chapterModeValue])
 
   const applyFormEnvData = useCallback((nextEnvData: EnvData) => {
     setSidePanelChecked(nextEnvData.sidePanel)
@@ -151,8 +147,6 @@ const OptionsPage = () => {
     setAutoExpandChecked(nextEnvData.autoExpand)
     setSummarizeEnableChecked(nextEnvData.summarizeEnable)
     setEmailAutoSendEnabledChecked(nextEnvData.emailAutoSendEnabled)
-    setSearchEnabledChecked(nextEnvData.searchEnabled)
-    setCnSearchEnabledChecked(nextEnvData.cnSearchEnabled)
     setSummarizeFloatChecked(nextEnvData.summarizeFloat)
     setChapterModeChecked(nextEnvData.chapterMode ?? true)
 
@@ -172,7 +166,7 @@ const OptionsPage = () => {
     setFontSizeValue(nextEnvData.fontSize)
     setWordsValue(nextEnvData.words)
     setPromptsValue(nextEnvData.prompts ?? {})
-  }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSearchEnabledChecked, setCnSearchEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
+  }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
 
   const discoverModelsAndApply = useCallback(async (nextModelValue?: string) => {
     setModelDiscoveryStatus('loading')
@@ -181,7 +175,7 @@ const OptionsPage = () => {
       serverUrl: serverUrlValue,
       apiKey: apiKeyValue,
     })
-    const models = response.models.filter(item => !!item)
+    const models = response.models.filter(item => typeof item === 'string' && item.length > 0)
     if (models.length <= 0) {
       throw new Error('No models returned from server')
     }
@@ -280,10 +274,11 @@ const OptionsPage = () => {
       nextModel = modelResult.model
       nextDiscoveredModels = modelResult.models
     } catch (error: any) {
-      const errorMessage = error?.message ?? 'Unable to load model list from server'
+      const errorMessage = error?.message ?? '无法从服务端加载模型列表'
+      const displayMessage = `模型发现失败：${String(errorMessage)}`
       setModelDiscoveryStatus('error')
-      setModelDiscoveryError(errorMessage)
-      toast.error('Model discovery failed, keep current model')
+      setModelDiscoveryError(displayMessage)
+      toast.error('模型发现失败，已保留当前模型')
     }
 
     dispatch(setEnvData({
@@ -292,7 +287,7 @@ const OptionsPage = () => {
       discoveredModels: nextDiscoveredModels,
       modelDiscoveryUpdatedAt: Date.now(),
     }))
-    toast.success('Saved')
+    toast.success('保存成功')
     sendExtension(null, 'CLOSE_SIDE_PANEL')
     // 3秒后关闭
     setTimeout(() => {
@@ -307,12 +302,13 @@ const OptionsPage = () => {
   const onRefreshModels = useCallback(async () => {
     try {
       await discoverModelsAndApply()
-      toast.success('Model list refreshed')
+      toast.success('模型列表刷新成功')
     } catch (error: any) {
-      const errorMessage = error?.message ?? 'Unable to load model list from server'
+      const errorMessage = error?.message ?? '无法从服务端加载模型列表'
+      const displayMessage = `模型发现失败：${String(errorMessage)}`
       setModelDiscoveryStatus('error')
-      setModelDiscoveryError(errorMessage)
-      toast.error('Model discovery failed')
+      setModelDiscoveryError(displayMessage)
+      toast.error('模型发现失败')
     }
   }, [discoverModelsAndApply])
 
@@ -343,11 +339,11 @@ const OptionsPage = () => {
           <input id='sidePanel' type='checkbox' className='toggle toggle-primary' checked={sidePanelValue}
                  onChange={setSidePanelValue}/>
         </FormItem>
-        {!sidePanelValue && <FormItem title='自动插入' htmlFor='autoInsert' tip='是否自动插入字幕列表(可以手动点击扩展图标插入)'>
+        {sidePanelValue !== true && <FormItem title='自动插入' htmlFor='autoInsert' tip='是否自动插入字幕列表(可以手动点击扩展图标插入)'>
           <input id='autoInsert' type='checkbox' className='toggle toggle-primary' checked={autoInsertValue}
                  onChange={setAutoInsertValue}/>
         </FormItem>}
-        {!sidePanelValue && <FormItem title='自动展开' htmlFor='autoExpand' tip='是否视频有字幕时自动展开字幕列表'>
+        {sidePanelValue !== true && <FormItem title='自动展开' htmlFor='autoExpand' tip='是否视频有字幕时自动展开字幕列表'>
           <input id='autoExpand' type='checkbox' className='toggle toggle-primary' checked={autoExpandValue}
                  onChange={setAutoExpandValue}/>
         </FormItem>}
@@ -357,14 +353,14 @@ const OptionsPage = () => {
         </FormItem>
         <FormItem title='主题'>
           <div className="btn-group border border-base-300 rounded-md overflow-hidden">
-            <button onClick={onSelTheme1} className={classNames('btn btn-sm no-animation', (!themeValue || themeValue === 'system')?'btn-active':'')}>系统</button>
+            <button onClick={onSelTheme1} className={classNames('btn btn-sm no-animation', (themeValue == null || themeValue === 'system')?'btn-active':'')}>系统</button>
             <button onClick={onSelTheme2} className={classNames('btn btn-sm no-animation', themeValue === 'light'?'btn-active':'')}>浅色</button>
             <button onClick={onSelTheme3} className={classNames('btn btn-sm no-animation', themeValue === 'dark'?'btn-active':'')}>深色</button>
           </div>
         </FormItem>
         <FormItem title='字体大小'>
           <div className="btn-group border border-base-300 rounded-md overflow-hidden">
-            <button onClick={onSelFontSize1} className={classNames('btn btn-sm no-animation', (!fontSizeValue || fontSizeValue === 'normal')?'btn-active':'')}>普通</button>
+            <button onClick={onSelFontSize1} className={classNames('btn btn-sm no-animation', (fontSizeValue == null || fontSizeValue === 'normal')?'btn-active':'')}>普通</button>
             <button onClick={onSelFontSize2} className={classNames('btn btn-sm no-animation', fontSizeValue === 'large'?'btn-active':'')}>加大</button>
           </div>
         </FormItem>
@@ -389,10 +385,10 @@ const OptionsPage = () => {
         {<FormItem title='模型发现'>
           <div className='flex items-center gap-2'>
             <button className='btn btn-xs btn-outline' onClick={onRefreshModels} disabled={modelDiscoveryStatus === 'loading'}>
-              {modelDiscoveryStatus === 'loading' ? 'Loading...' : 'Refresh models'}
+              {modelDiscoveryStatus === 'loading' ? '加载中...' : '刷新模型'}
             </button>
             {modelDiscoveryStatus === 'success' && <span className='text-xs text-success'>已发现 {discoveredModelsValue.length} 个模型</span>}
-            {modelDiscoveryStatus === 'error' && <span className='text-xs text-error'>{modelDiscoveryError ?? 'Model discovery failed'}</span>}
+            {modelDiscoveryStatus === 'error' && <span className='text-xs text-error'>{modelDiscoveryError ?? '模型发现失败'}</span>}
           </div>
         </FormItem>}
         {modelValue === 'custom' && <FormItem title='模型名' htmlFor='customModel'>
@@ -403,7 +399,7 @@ const OptionsPage = () => {
           <input id='customModelTokens' type='number' className='input input-sm input-bordered w-full'
                  placeholder={'' + CUSTOM_MODEL_TOKENS}
                  value={customModelTokensValue}
-                 onChange={e => setCustomModelTokensValue(e.target.value ? parseInt(e.target.value) : undefined)}/>
+                 onChange={e => setCustomModelTokensValue(e.target.value.length > 0 ? parseInt(e.target.value) : undefined)}/>
         </FormItem>}
       </OptionCard>
 
@@ -450,7 +446,7 @@ const OptionsPage = () => {
         </FormItem>
         <FormItem htmlFor='words' title='分段字数' tip='注意，不同模型有不同字数限制'>
           <div className='flex-1 flex flex-col'>
-            <input id='words' type='number' className='input input-sm input-bordered w-full' placeholder={`默认为上限x${WORDS_RATE}`} value={wordsValue??''} onChange={e => setWordsValue(e.target.value?parseInt(e.target.value):undefined)}/>
+            <input id='words' type='number' className='input input-sm input-bordered w-full' placeholder={`默认为上限x${WORDS_RATE}`} value={wordsValue??''} onChange={e => setWordsValue(e.target.value.length > 0 ? parseInt(e.target.value) : undefined)}/>
             {/* <input type="range" min={WORDS_MIN} max={WORDS_MAX} step={WORDS_STEP} value={wordsValue} className="range range-primary" onChange={onWordsChange} /> */}
             {/* <div className="w-full flex justify-between text-sm px-2"> */}
             {/*  {wordsList.map(words => <span key={words}>{words}</span>)} */}
@@ -462,23 +458,8 @@ const OptionsPage = () => {
           （太接近上限总结会报错）
         </div>
       </OptionCard>
-      <OptionCard title={<div className='flex items-center'>
-        搜索配置
-      </div>}>
-        <FormItem title='启用搜索' htmlFor='searchEnabled' tip='是否启用字幕搜索功能'>
-          <input id='searchEnabled' type='checkbox' className='toggle toggle-primary' checked={searchEnabledValue}
-                 onChange={setSearchEnabledValue}/>
-        </FormItem>
-        <FormItem title='拼音搜索' htmlFor='cnSearchEnabled' tip='是否启用中文拼音搜索'>
-          <input id='cnSearchEnabled' type='checkbox' className='toggle toggle-primary' checked={cnSearchEnabledValue}
-                 onChange={setCnSearchEnabledValue}/>
-        </FormItem>
-      </OptionCard>
       <OptionCard title='提示词配置'>
-        <div className='flex justify-center'>
-          <a className='text-sm link link-primary' onClick={togglePromptsFold}>点击{promptsFold ? '展开' : '折叠'}</a>
-        </div>
-        {!promptsFold && PROMPT_TYPES.map((item) => <FormItem key={item.type} title={item.name} htmlFor={`prompt-${item.type}`}>
+        {PROMPT_TYPES.map((item) => <FormItem key={item.type} title={item.name} htmlFor={`prompt-${item.type}`}>
           <textarea id={`prompt-${item.type}`} className='mt-2 textarea input-bordered w-full'
                     placeholder='留空将使用内置默认提示词。支持变量：{{language}}、{{title}}、{{segment}}。'
                     value={promptsValue[item.type] ?? ''} onChange={(e) => {

@@ -7,10 +7,10 @@ export interface SuccessResult<T> {
   finished: true
   data: T
 }
-export interface FailResult<T> {
+export interface FailResult {
   finished: false
 }
-export type Result<T> = SuccessResult<T> | FailResult<T>
+export type Result<T> = SuccessResult<T> | FailResult
 
 /**
  * 等待器

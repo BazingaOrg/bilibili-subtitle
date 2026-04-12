@@ -5,7 +5,7 @@ export interface ModelDiscoveryResult {
 }
 
 export const getServerUrl = (serverUrl?: string) => {
-  if (!serverUrl) {
+  if (serverUrl == null || serverUrl.length === 0) {
     return DEFAULT_SERVER_URL_OPENAI
   }
   if (serverUrl.endsWith('/')) {
@@ -37,7 +37,7 @@ export const discoverModels = async (params: { serverUrl?: string, apiKey?: stri
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      ...(params.apiKey ? {Authorization: 'Bearer ' + params.apiKey} : {}),
+      ...(typeof params.apiKey === 'string' && params.apiKey.length > 0 ? {Authorization: 'Bearer ' + params.apiKey} : {}),
     },
   })
   if (!resp.ok) {
@@ -48,7 +48,7 @@ export const discoverModels = async (params: { serverUrl?: string, apiKey?: stri
   const data = await resp.json() as { data?: Array<{ id?: string }> }
   const modelSet = new Set<string>()
   for (const item of data.data ?? []) {
-    if (typeof item.id === 'string' && item.id.trim()) {
+    if (typeof item.id === 'string' && item.id.trim().length > 0) {
       modelSet.add(item.id.trim())
     }
   }
@@ -71,9 +71,16 @@ export const handleChatCompleteTask = async (task: Task) => {
     body: JSON.stringify(data),
   })
   task.resp = await resp.json()
-  if (task.resp.usage) {
-    return (task.resp.usage.total_tokens??0) > 0
-  } else {
-    throw new Error(`${task.resp.error.code as string??''} ${task.resp.error.message as string ??''}`)
+  const responsePayload = task.resp as {
+    usage?: { total_tokens?: number }
+    error?: { code?: string, message?: string }
   }
+
+  if (responsePayload.usage != null) {
+    return (responsePayload.usage.total_tokens ?? 0) > 0
+  }
+
+  const errorCode = responsePayload.error?.code ?? ''
+  const errorMessage = responsePayload.error?.message ?? ''
+  throw new Error(`${errorCode} ${errorMessage}`.trim())
 }

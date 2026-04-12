@@ -1,9 +1,7 @@
 import { msgWaiter } from './useMessagingService'
 import { useCallback, useState } from 'react'
-import Layer1Protocol from '../layer1/Layer1Protocol'
 import { TAG_TARGET_INJECT } from '../const'
-import { sendHandshakeFromApp } from '../messagingUtil'
-import { ExtensionMessage, InjectMessage, L2ReqMsg, L2ResMsg, MessagingExtensionMessages } from '../typings'
+import { ExtensionMessage, InjectMessage, MessagingExtensionMessages } from '../typings'
 import { handleRes } from '../util'
 
 const useMessaging = <AllExtensionMessagesType extends ExtensionMessage, AllInjectMessagesType extends InjectMessage>(defaultUsePort: boolean) => {
@@ -16,6 +14,10 @@ const useMessaging = <AllExtensionMessagesType extends ExtensionMessage, AllInje
     if (usePort) {
       // wait
       const pmh = await msgWaiter.wait()
+      if (pmh == null) {
+        setDisconnected(true)
+        throw new Error('messaging not initialized')
+      }
       if (pmh.disconnected) {
         // console.info('pmh reconnect...')
         // pmh.reconnect()

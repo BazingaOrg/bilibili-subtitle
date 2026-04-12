@@ -76,7 +76,7 @@ const deriveCryptoKey = async (passphrase: string, salt: Uint8Array, usages: Key
     ['deriveKey'],
   )
 
-  return crypto.subtle.deriveKey(
+  return await crypto.subtle.deriveKey(
     {
       name: 'PBKDF2',
       salt,
@@ -94,7 +94,7 @@ const deriveCryptoKey = async (passphrase: string, salt: Uint8Array, usages: Key
 }
 
 const ensurePassphrase = (passphrase: string) => {
-  if (!passphrase || !passphrase.trim()) {
+  if (passphrase.length === 0 || passphrase.trim().length === 0) {
     throw new ConfigTransferError('INVALID_FORMAT', '口令不能为空')
   }
 }

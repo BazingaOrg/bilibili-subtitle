@@ -25,7 +25,7 @@ const Summarize = (props: {
 
   const onGenerate = useCallback(() => {
     const apiKey = envData.apiKey
-    if (apiKey) {
+    if (typeof apiKey === 'string' && apiKey.length > 0) {
       addSummarizeTask(segment).catch(console.error)
     } else {
       toast.error('请先在选项页面设置ApiKey!')
@@ -52,13 +52,13 @@ const Summarize = (props: {
     </div>
     <div className='flex flex-col justify-center items-center'>
       {segment.text.length < SUMMARIZE_THRESHOLD && <div className='desc-lighter text-xs'>文字过短，无法总结.</div>}
-      {segment.text.length >= SUMMARIZE_THRESHOLD && ((summary == null) || summary.status !== 'done' || summary.error) && <button disabled={summary?.status === 'pending'}
+      {segment.text.length >= SUMMARIZE_THRESHOLD && (summary == null || summary.status !== 'done' || summary.error != null) && <button disabled={summary?.status === 'pending'}
                 className={classNames('btn btn-link btn-xs', summary?.status === 'pending' && 'loading')}
                 onClick={onGenerate}>{(summary == null) || summary.status === 'init' ? '点击生成' : (summary.status === 'pending' ? '生成中' : '重新生成')}</button>}
       {((summary == null) || summary.status === 'init') && <div className='desc-lighter text-xs'>{SUMMARIZE_TYPES.brief.desc}</div>}
-      {summary?.error && <div className='text-xs text-error'>{summary?.error}</div>}
+      {summary?.error != null && summary.error.length > 0 && <div className='text-xs text-error'>{summary.error}</div>}
     </div>
-    {!float && <div className='mx-2 my-1 h-[1px] bg-base-300'></div>}
+    {float !== true && <div className='mx-2 my-1 h-[1px] bg-base-300'></div>}
   </div>
 }
 
@@ -85,7 +85,7 @@ const SegmentCard = (props: {
   const showCurrent = useMemo(() => curIdx != null && segment.startIdx <= curIdx && curIdx <= segment.endIdx, [curIdx, segment.endIdx, segment.startIdx])
   const summary = useMemo(() => {
     const result = segment.summaries.brief
-    if (result) {
+    if (result != null) {
       return result
     }
     return undefined
@@ -94,15 +94,15 @@ const SegmentCard = (props: {
   const onFold = useCallback(() => {
     dispatch(setSegmentFold({
       segmentStartIdx: segment.startIdx,
-      fold: !segment.fold
+      fold: segment.fold !== true
     }))
   }, [dispatch, segment.fold, segment.startIdx])
 
   // 检测设置floatKeyPointsSegIdx
   useEffect(() => {
-    if (summarizeFloat) { // 已启用
+    if (summarizeFloat === true) { // 已启用
       if (!fold && showCurrent) { // 当前Card有控制权
-        if (!inViewport && (summary != null) && !isSummaryEmpty(summary)) {
+        if (inViewport !== true && summary != null && !isSummaryEmpty(summary)) {
           dispatch(setFloatKeyPointsSegIdx(segment.startIdx))
         } else {
           dispatch(setFloatKeyPointsSegIdx())
@@ -114,17 +114,17 @@ const SegmentCard = (props: {
   return <div
     className={classNames('border border-base-300 bg-base-100 rounded-md flex flex-col m-1.5 p-1.5 gap-1', showCurrent && 'ring-1 ring-primary/35 shadow-sm')}>
     {/* 章节标题 */}
-    {segment.chapterTitle && <div className='text-center py-1 px-2 bg-primary/10 rounded text-sm font-semibold text-primary border border-primary/20'>
+    {typeof segment.chapterTitle === 'string' && segment.chapterTitle.length > 0 && <div className='text-center py-1 px-2 bg-primary/10 rounded text-sm font-semibold text-primary border border-primary/20'>
       {segment.chapterTitle}
     </div>}
     <div className='relative flex justify-center min-h-[20px]'>
       {segments != null && segments.length > 0 &&
         <div className='absolute left-0 top-0 bottom-0 text-xs select-none flex-center desc'>
-          {segment.fold
+          {segment.fold === true
             ? <BsPlusSquare className='cursor-pointer' onClick={onFold}/> :
-            <BsDashSquare className='cursor-pointer' onClick={onFold}/>} 
+            <BsDashSquare className='cursor-pointer' onClick={onFold}/>}
         </div>}
-      {summarizeEnable && <div className="tabs">
+      {summarizeEnable === true && <div className="tabs">
         <a className="tab tab-lifted tab-xs tab-disabled cursor-default"></a>
         <a className='tab tab-lifted tab-xs tab-active'>总结</a>
         <a className="tab tab-lifted tab-xs tab-disabled cursor-default"></a>
@@ -132,12 +132,12 @@ const SegmentCard = (props: {
       <div
         className='absolute right-0 top-0 bottom-0 text-xs desc-lighter select-none flex-center'>{getLastTime(segment.items[segment.items.length - 1].to - segment.items[0].from)}</div>
     </div>
-    {summarizeEnable && <div ref={summarizeRef}>
+    {summarizeEnable === true && <div ref={summarizeRef}>
       <Summarize segment={segment} summary={summary}/>
     </div>}
-    {!segment.fold
+    {segment.fold !== true
       ? <div>
-        {!compact && <div className='desc text-xs flex py-0.5'>
+        {compact !== true && <div className='desc text-xs flex py-0.5'>
           <div className='w-[66px] flex justify-center'>时间</div>
           <div className='flex-1'>字幕内容</div>
         </div>}
@@ -146,7 +146,7 @@ const SegmentCard = (props: {
                                                                                item={item}
                                                                                idx={segment.startIdx + idx}
                                                                                isIn={curIdx === segment.startIdx + idx}
-                                                                               needScroll={needScroll && curIdx === segment.startIdx + idx}
+                                                                               needScroll={needScroll === true && curIdx === segment.startIdx + idx}
                                                                                last={idx === segment.items.length - 1}
         />)}
         {segments != null && segments.length > 0 && <div className='flex justify-center'><a className='link text-xs'

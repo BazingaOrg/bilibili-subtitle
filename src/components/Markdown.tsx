@@ -9,9 +9,9 @@ function CopyBtn(props: {
   return <div className='flex justify-center mt-1'>
     <button className="btn btn-xs px-8 btn-primary normal-case shadow-sm" onClick={() => {
       navigator.clipboard.writeText(content).then(() => {
-        toast.success('Copied!')
+        toast.success('已复制')
       }).catch(console.error)
-    }}>Copy
+    }}>复制
     </button>
   </div>
 }
@@ -27,7 +27,7 @@ function Markdown(props: {
     linkTarget={'_blank'}
     components={{
       code({node, inline, className, children, ...props}) {
-        if (inline) {
+        if (inline === true) {
           return <code
             className={classNames(className, 'md-inline-block kbd kbd-xs rounded text-base-content/80')} {...props}>
             {children}
@@ -35,7 +35,7 @@ function Markdown(props: {
         } else {
           return <code className={classNames(className, 'relative', codeBlockClass)} {...props}>
             {children}
-            {className?.includes('language-copy') && <CopyBtn content={children[0] as string}/>}
+            {typeof className === 'string' && className.includes('language-copy') && <CopyBtn content={children[0] as string}/>}
           </code>
         }
       }

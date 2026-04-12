@@ -35,6 +35,9 @@ class ExtensionMessaging<M extends ExtensionMessage, AllInjectMessagesType exten
   init = (methods: L2MethodHandlers<M, L2ReqMsg, L2ResMsg>) => {
     const innerMethods: L2MethodHandlers<MessagingExtensionMessages, L2ReqMsg, L2ResMsg> = {
       _HANDSHAKE: async (params, context: MethodContext, portContext?: PortContext<L2ReqMsg, L2ResMsg>) => {
+        if (portContext == null) {
+          throw new Error('Handshake requires active port context')
+        }
         const tag = params.tag
         let tabId = params.tabId
 
@@ -49,21 +52,24 @@ class ExtensionMessaging<M extends ExtensionMessage, AllInjectMessagesType exten
 
         // 先清理相同tabId与tag的port
         for (const portContext_ of this.portIdToPort.values()) {
-          if (portContext_.tabId === tabId && portContext_.tag === tag && portContext_.id !== portContext!.id) {
+          if (portContext_.tabId === tabId && portContext_.tag === tag && portContext_.id !== portContext.id) {
             this.portIdToPort.delete(portContext_.id)
             portContext_.l1protocol.dispose()
             this.debug('clean port: ', portContext_.id)
           }
         }
 
-        portContext!.tabId = tabId
-        portContext!.tag = tag
-        portContext!.ready = true
+        portContext.tabId = tabId
+        portContext.tag = tag
+        portContext.ready = true
 
-        console.debug('handshake:', portContext!.id, tabId, tag)
+        console.debug('handshake:', portContext.id, tabId, tag)
       },
       _ROUTE: async (params, context: MethodContext) => {
-        return await this.sendMessage(params.usePort, context.tabId!, params.tag, params.method as any, params.params)
+        if (context.tabId == null) {
+          throw new Error('Missing tab id for route message')
+        }
+        return await this.sendMessage(params.usePort, context.tabId, params.tag, params.method as any, params.params)
       },
     }
 
@@ -170,7 +176,7 @@ class ExtensionMessaging<M extends ExtensionMessage, AllInjectMessagesType exten
         let res: any = null
         for (const portContext of this.portIdToPort.values()) {
           // check tabId
-          if (tabId === portContext.tabId!) {
+          if (portContext.tabId != null && tabId === portContext.tabId) {
             // check tag
             if (portContext.tag === tag) {
               try {
@@ -207,7 +213,7 @@ class ExtensionMessaging<M extends ExtensionMessage, AllInjectMessagesType exten
       discarded: false,
     })
     const tabIds: number[] = tabs.map(tab => tab.id).filter(tabId => tabId != null) as number[]
-    const filteredTabIds: number[] = tabIds.filter(tabId => !ignoreTabIds?.includes(tabId))
+    const filteredTabIds: number[] = tabIds.filter(tabId => ignoreTabIds == null || !ignoreTabIds.includes(tabId))
     this.broadcastMessageExact(usePort, filteredTabIds, tag, method, params)
   }
 }

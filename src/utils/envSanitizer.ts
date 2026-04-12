@@ -25,8 +25,6 @@ const ENV_DATA_KEYS: Array<keyof EnvData> = [
   'theme',
   'fontSize',
   'chapterMode',
-  'searchEnabled',
-  'cnSearchEnabled',
   'prompts',
 ]
 
@@ -48,7 +46,7 @@ export const sanitizeEnvData = (data?: EnvData): EnvData | undefined => {
   if (nextData.prompts != null) {
     const summaryPrompt = nextData.prompts[PROMPT_TYPE_SUMMARIZE_BRIEF]
     nextData.prompts = {
-      [PROMPT_TYPE_SUMMARIZE_BRIEF]: (typeof summaryPrompt === 'string' && summaryPrompt.trim().length > 0)
+      [PROMPT_TYPE_SUMMARIZE_BRIEF]: typeof summaryPrompt === 'string'
         ? summaryPrompt
         : PROMPT_DEFAULTS[PROMPT_TYPE_SUMMARIZE_BRIEF],
     }

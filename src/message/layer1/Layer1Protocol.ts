@@ -32,7 +32,7 @@ class Layer1Protocol<L1Req = any, L1Res = any> {
   constructor(handler: Handler<L1Req, L1Res>, port?: chrome.runtime.Port, autoDispose = true, timeout = 30000) { // 默认超时 30 秒
     // this.name = name;
     this.autoDispose = autoDispose
-    if (port) {
+    if (port != null) {
       this.port = port
     } else {
       this.port = chrome.runtime.connect()
@@ -56,7 +56,11 @@ class Layer1Protocol<L1Req = any, L1Res = any> {
   private readonly _messageListener = (msg: ReqMsg<L1Req, L1Res>) => {
     const { id, type, req, res } = msg
     if (type === 'req') {
-      this.handler(req!).then(res => {
+      if (req == null) {
+        this.port.postMessage({ id, type: 'res', res: { code: 400, msg: 'Missing request payload' } })
+        return
+      }
+      this.handler(req).then(res => {
         const response: RespMsg<L1Res> = {
           code: 200,
           data: res
@@ -70,8 +74,9 @@ class Layer1Protocol<L1Req = any, L1Res = any> {
         this.port.postMessage({ id, type: 'res', res: response })
       })
     } else if (type === 'res') {
-      if (this.requests.has(id)) {
-        const { resolve, reject, timer } = this.requests.get(id)!
+      const requestContext = this.requests.get(id)
+      if (requestContext != null) {
+        const { resolve, reject, timer } = requestContext
         // 清除超时定时器
         clearTimeout(timer)
         // 移除消息 ID
@@ -82,9 +87,9 @@ class Layer1Protocol<L1Req = any, L1Res = any> {
         }
         // 通过 ID 找到对应的 Promise 并 resolve
         if (res.code === 200) {
-          resolve(res.data!)
+          resolve(res.data as L1Res)
         } else { // 业务错误
-          reject(new Error(`${res.code}: ${res.msg || 'Unknown error'}`))
+          reject(new Error(`${res.code}: ${res.msg ?? 'Unknown error'}`))
         }
       } else {
         console.error('unknown response message id: ', id)

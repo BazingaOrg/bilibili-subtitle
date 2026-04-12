@@ -49,7 +49,7 @@ export const getSummaryStr = (summary: Summary) => {
 }
 
 export const getServerUrl = (serverUrl?: string) => {
-  if (!serverUrl) {
+  if (serverUrl == null || serverUrl.length === 0) {
     return 'https://api.openai.com'
   }
   if (serverUrl.endsWith('/')) {
@@ -80,7 +80,7 @@ export const setTheme = (theme: EnvData['theme']) => {
   const body = document.body
 
   theme = theme ?? 'system'
-  if (!theme || theme === 'system') {
+  if (theme === 'system') {
     theme = isDarkMode() ? 'dark' : 'light'
   }
 
@@ -134,7 +134,7 @@ export const buildSummaryOverview = (segments: Segment[] | undefined): {
   let failedCount = 0
   for (const segment of segments) {
     const summary = segment.summaries.brief
-    if (summary && !isSummaryEmpty(summary)) {
+    if (summary != null && !isSummaryEmpty(summary)) {
       success = true
       successCount++
       summaryBody += getSummaryStr(summary)
@@ -147,7 +147,7 @@ export const buildSummaryOverview = (segments: Segment[] | undefined): {
     }
   }
   let content = `${SUMMARIZE_TYPES.brief.downloadName}\n\n${summaryBody}`
-  content += '\n--- 哔哩哔哩字幕列表扩展'
+  content += '\n--- Bilibili Subtitle (Bazinga Fork)'
 
   return {
     success,
@@ -193,7 +193,7 @@ export const buildSummaryEmailMarkdown = (params: {
  */
 export const parseStrTimeToSeconds = (time: string): number => {
   // 1. 基本输入验证 (可选但推荐)
-  if (!time || typeof time !== 'string') {
+  if (typeof time !== 'string' || time.length === 0) {
     console.warn(`Invalid input type for time: ${typeof time}`)
     return 0 // 或者 return NaN;
   }

@@ -6,7 +6,6 @@ import useSubtitleService from '../hooks/useSubtitleService'
 import {EVENT_EXPAND} from '../consts/const'
 import {EventBusContext} from '../Router'
 import useTranslateService from '../hooks/useTranslateService'
-import useSearchService from '../hooks/useSearchService'
 import {setFold} from '../redux/envReducer'
 import { useMessage } from '@/hooks/useMessageService'
 import {isDarkMode} from '@/utils/env_util'
@@ -18,7 +17,7 @@ function App() {
   const envData = useAppSelector(state => state.env.envData)
   const eventBus = useContext(EventBusContext)
   const totalHeight = useAppSelector(state => state.env.totalHeight)
-  const {sendInject} = useMessage(!!envData.sidePanel)
+  const {sendInject} = useMessage(Boolean(envData.sidePanel))
   const isDarkTheme = envData.theme === 'dark' || ((envData.theme == null || envData.theme === 'system') && isDarkMode())
 
   const foldCallback = useCallback(() => {
@@ -37,7 +36,6 @@ function App() {
 
   useSubtitleService()
   useTranslateService()
-  useSearchService()
 
   return <div className={classNames(
     'select-none w-full subtitle-shell bili-surface shadow-sm'

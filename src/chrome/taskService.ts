@@ -28,7 +28,7 @@ export const handleTask = async (task: Task) => {
 export const initTaskService = () => {
   // 处理任务: tasksMap
   setInterval(() => {
-    for (const [_, task] of tasksMap) {
+    for (const task of tasksMap.values()) {
       if (task.status === 'pending') {
         handleTask(task).catch(console.error)
         break

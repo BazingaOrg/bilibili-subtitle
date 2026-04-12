@@ -6,7 +6,7 @@ import {IStorage} from './storage'
  */
 export default class StorageChromeClient implements IStorage {
   async setStore(key: string, data?: string) {
-    if (data) {
+    if (typeof data === 'string') {
       await chrome.runtime.sendMessage({
         type: 'syncSet',
         items: {

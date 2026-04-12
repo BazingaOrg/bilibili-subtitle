@@ -29,7 +29,7 @@ const useMessageService = () => {
     },
   }))
 
-  useMessagingService(!!envData.sidePanel, methodsFunc)
+  useMessagingService(envData.sidePanel === true, methodsFunc)
 }
 
 export default useMessageService

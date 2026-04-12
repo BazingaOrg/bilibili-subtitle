@@ -50,7 +50,7 @@ const useKeyService = () => {
 
     // up arrow
     if (e.key === 'ArrowUp') {
-      if (curIdx && (data != null) && !cursorInInput) {
+      if (curIdx != null && curIdx > 0 && data != null && !cursorInInput) {
         prevent = true
         const newCurIdx = Math.max(curIdx - 1, 0)
         move(data.body[newCurIdx].from, false)
@@ -58,7 +58,7 @@ const useKeyService = () => {
     }
     // down arrow
     if (e.key === 'ArrowDown') {
-      if (curIdx !== undefined && (data != null) && !cursorInInput) {
+      if (curIdx !== undefined && data != null && !cursorInInput) {
         prevent = true
         const newCurIdx = Math.min(curIdx + 1, data.body.length - 1)
         move(data.body[newCurIdx].from, false)

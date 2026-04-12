@@ -50,7 +50,7 @@ const useTranslate = () => {
   const reviewed = useAppSelector(state => state.env.tempData.reviewed)
   const reviewAction = useAppSelector(state => state.env.reviewAction)
   const reviewActions = useAppSelector(state => state.env.tempData.reviewActions)
-  const {sendExtension} = useMessage(!!envData.sidePanel)
+  const {sendExtension} = useMessage(Boolean(envData.sidePanel))
 
   const addSummarizeTask = useCallback(async (segment: Segment) => {
     // review action
@@ -72,8 +72,8 @@ const useTranslate = () => {
       prompt = prompt.replaceAll('{{title}}', title??'')
       prompt = prompt.replaceAll('{{subtitles}}', subtitles)
       prompt = prompt.replaceAll('{{segment}}', segment.text)
-      if (!prompt.trim()) {
-        toast.error('Prompt template is empty')
+      if (prompt.trim().length === 0) {
+        toast.error('提示词模板为空')
         return
       }
 
@@ -134,8 +134,8 @@ const useTranslate = () => {
       const content = task.resp?.choices?.[0]?.message?.content?.trim()
       if (task.status === 'done') {
         // 异常提示
-        if (task.error) {
-          toast.error(task.error)
+        if (task.error != null && task.error.length > 0) {
+          toast.error(`总结失败：${task.error}`)
         }
         // 删除任务
         dispatch(delTaskId(taskId))

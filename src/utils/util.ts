@@ -45,7 +45,7 @@ export const formatTime = (time: number): string => {
  * @param time 2.82
  */
 export const formatSrtTime = (time: number) => {
-  if (!time) return '00:00:00,000'
+  if (time === 0 || Number.isNaN(time)) return '00:00:00,000'
 
   const hours = Math.floor(time / 60 / 60)
   const minutes = Math.floor(time / 60 % 60)
@@ -58,7 +58,7 @@ export const formatSrtTime = (time: number) => {
  * @param time 2.82
  */
 export const formatVttTime = (time: number) => {
-  if (!time) return '00:00:00.000'
+  if (time === 0 || Number.isNaN(time)) return '00:00:00.000'
 
   const hours = Math.floor(time / 60 / 60)
   const minutes = Math.floor(time / 60 % 60)
@@ -110,7 +110,7 @@ export const handleJson = (json: any) => {
  * 连接url
  */
 export const combineUrl = (parentPath: string, path?: string) => {
-  if (!path) {
+  if (path == null || path.length === 0) {
     return parentPath
   }
 
@@ -141,7 +141,7 @@ export const getIconUrl = (bookmarkUrlStr: string, icon?: string) => {
     console.error(e)
     return icon
   }
-  if (icon) {
+  if (icon != null && icon.length > 0) {
     if (icon.startsWith('//')) {
       return combineUrl(bookmarkUrl.protocol, icon)
     } else if (icon.startsWith('/')) {
@@ -245,10 +245,10 @@ export const removeUrlParams = (url: string, paramName: string, extraRemoveParam
   const paramValue = params.get(paramName)
   params.delete(paramName)
   const paramValues: {[key: string]: string} = {}
-  if (paramValue) {
+  if (paramValue != null && paramValue.length > 0) {
     for (const paramName_ of extraRemoveParamNames??[]) {
       const value = params.get(paramName_)
-      if (value) {
+      if (value != null && value.length > 0) {
         paramValues[paramName_] = value
       }
       params.delete(paramName_)
@@ -256,7 +256,7 @@ export const removeUrlParams = (url: string, paramName: string, extraRemoveParam
   }
   const newSearch = params.toString()
   const base = url.split('?')[0]
-  const newUrl = base + (newSearch ? ('?' + newSearch) : '')
+  const newUrl = base + (newSearch.length > 0 ? ('?' + newSearch) : '')
   console.log(`[removeUrlParams]${paramName}: ${paramValue??''} (${url} -> ${newUrl})`)
   return {
     newUrl,
@@ -267,7 +267,7 @@ export const removeUrlParams = (url: string, paramName: string, extraRemoveParam
 
 export const getFaviconUrl = (url: string) => {
   try {
-    if (url) {
+    if (url.length > 0) {
       const urlObj = new URL(url)
       return `${urlObj.origin}/favicon.ico`
     }
@@ -276,13 +276,13 @@ export const getFaviconUrl = (url: string) => {
 }
 
 export const fixUrl = (url: string | undefined, defaultSchema?: string) => {
-  if (url) {
+  if (typeof url === 'string' && url.length > 0) {
     const urlLower = url.toLowerCase()
     if (!urlLower.startsWith('http://') && !urlLower.startsWith('https://') && !urlLower.startsWith('chrome://') && !urlLower.startsWith('edge://')) {
       url = (defaultSchema??'http')+'://'+url
     }
 
-    if (url) {
+    if (url.length > 0) {
       try {
         const urlObj = new URL(url)
         return urlObj.toString()
@@ -319,7 +319,7 @@ export const orElses = <T>(...values: T[]) => {
       }
     }
     // other
-    if (value) {
+    if (value != null) {
       return value
     }
   }
@@ -339,7 +339,7 @@ export const getQuery = (name: string) => {
 }
 
 export const hasStr = (list: string | string[] | undefined | null, str: string) => {
-  if (list) {
+  if (list != null) {
     if (typeof list === 'string') {
       return list === str
     } else {
@@ -390,7 +390,7 @@ export const downloadText = (data: string, fileName: string) => {
 }
 
 export const downloadImage = async (imageUrl: string, fileName?: string) => {
-  if (!fileName) {
+  if (fileName == null || fileName.length === 0) {
     const ext = getUrlExtension(imageUrl)
     fileName = `download.${ext??'jpg'}`
   }

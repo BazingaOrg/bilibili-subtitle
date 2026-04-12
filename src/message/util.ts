@@ -12,6 +12,6 @@ export const handleRes = (res: L2ResMsg): any => {
   if (res.code === 200) {
     return res.data
   } else {
-    throw new Error(`${res.code}: ${res.msg || 'Unknown error'}`)
+    throw new Error(`${res.code}: ${res.msg ?? 'Unknown error'}`)
   }
 }

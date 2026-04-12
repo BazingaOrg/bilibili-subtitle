@@ -41,11 +41,11 @@ const useSubtitleService = () => {
   const segments = useAppSelector(state => state.env.segments)
   const reviewed = useAppSelector(state => state.env.tempData.reviewed)
   const reviewActions = useAppSelector(state => state.env.tempData.reviewActions)
-  const {sendInject} = useMessage(!!envData.sidePanel)
+  const {sendInject} = useMessage(Boolean(envData.sidePanel))
 
   // 如果reviewActions达到15次，则设置reviewed为false
   useEffect(() => {
-    if (reviewed === undefined && reviewActions && reviewActions >= 15) {
+    if (reviewed === undefined && reviewActions != null && reviewActions >= 15) {
       dispatch(setTempData({
         reviewed: false
       }))
@@ -65,17 +65,18 @@ const useSubtitleService = () => {
   useEffect(() => {
     let autoExpand = envData.autoExpand
     // 如果显示在侧边栏，则自动展开
-    if (envData.sidePanel) {
+    if (envData.sidePanel === true) {
       autoExpand = true
     }
-    if (!curInfo && (!fold || (envReady && autoExpand)) && (infos != null) && infos.length > 0) {
+    const shouldAutoExpand = autoExpand === true
+    if (curInfo == null && (!fold || (envReady && shouldAutoExpand)) && infos != null && infos.length > 0) {
       dispatch(setCurInfo(infos[0]))
       dispatch(setCurFetched(false))
     }
   }, [curInfo, dispatch, envData.autoExpand, envReady, fold, infos, envData.sidePanel])
   // 获取
   useEffect(() => {
-    if (curInfo && !curFetched) {
+    if (curInfo != null && curFetched !== true) {
       sendInject(null, 'GET_SUBTITLE', {info: curInfo}).then(data => {
         data?.body?.forEach((item: TranscriptItem, idx: number) => {
           item.idx = idx
@@ -104,7 +105,7 @@ const useSubtitleService = () => {
     // 更新设置信息
     sendInject(null, 'GET_VIDEO_ELEMENT_INFO', {}).then(info => {
       dispatch(setNoVideo(info.noVideo))
-      if (envData.sidePanel) {
+      if (envData.sidePanel === true) {
         // get screen height
         dispatch(setTotalHeight(window.innerHeight))
       } else {
@@ -118,10 +119,10 @@ const useSubtitleService = () => {
   // 更新当前位置
   useEffect(() => {
     let newCurIdx
-    if (((data?.body) != null) && currentTime) {
+    if (data?.body != null && currentTime != null) {
       for (let i=0; i<data.body.length; i++) {
         const item = data.body[i]
-        if (item.from && currentTime < item.from) {
+        if (item.from != null && currentTime < item.from) {
           break
         } else {
           newCurIdx = i
@@ -136,10 +137,10 @@ const useSubtitleService = () => {
 
   // 需要滚动 => segment自动展开
   useEffect(() => {
-    if (needScroll && curIdx != null) { // 需要滚动
+    if (needScroll === true && curIdx != null) { // 需要滚动
       for (const segment of segments??[]) { // 检测segments
         if (segment.startIdx <= curIdx && curIdx <= segment.endIdx) { // 找到对应的segment
-          if (segment.fold) { // 需要展开
+          if (segment.fold === true) { // 需要展开
             dispatch(setSegmentFold({
               segmentStartIdx: segment.startIdx,
               fold: false
@@ -156,9 +157,9 @@ const useSubtitleService = () => {
     let segments: Segment[] | undefined
     const items = data?.body
     if (items != null) {
-      if (envData.summarizeEnable) { // 分段
+      if (envData.summarizeEnable === true) { // 分段
         let size = envData.words
-        if (!size) { // 默认
+        if (size == null || Number.isNaN(size)) { // 默认
           size = getModelMaxTokens(envData)*WORDS_RATE
         }
         size = Math.max(size, WORDS_MIN)
@@ -166,7 +167,7 @@ const useSubtitleService = () => {
         segments = []
 
         // 如果启用章节模式且有章节信息，按章节分割
-        if ((envData.chapterMode ?? true) && chapters && chapters.length > 0) {
+        if ((envData.chapterMode ?? true) && chapters != null && chapters.length > 0) {
           for (let chapterIdx = 0; chapterIdx < chapters.length; chapterIdx++) {
             const chapter = chapters[chapterIdx]
             const nextChapter = chapters[chapterIdx + 1]
@@ -174,7 +175,7 @@ const useSubtitleService = () => {
             // 找到属于当前章节的字幕项
             const chapterItems = items.filter(item => {
               const itemTime = item.from
-              return itemTime >= chapter.from && (nextChapter ? itemTime < nextChapter.from : true)
+              return itemTime >= chapter.from && (nextChapter != null ? itemTime < nextChapter.from : true)
             })
 
             if (chapterItems.length === 0) continue
@@ -253,7 +254,7 @@ const useSubtitleService = () => {
       }
     }
     dispatch(setSegments(segments))
-    dispatch(setFoldAll(!!segments?.length))
+    dispatch(setFoldAll((segments?.length ?? 0) > 0))
   }, [data?.body, dispatch, envData, chapters])
 
   // 每0.5秒更新当前视频时间
@@ -267,7 +268,6 @@ const useSubtitleService = () => {
       logMessagingError('GET_VIDEO_STATUS', error)
     })
   }, 500)
-
 }
 
 export default useSubtitleService

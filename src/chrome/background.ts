@@ -110,7 +110,10 @@ const methods: {
     }
   },
   SHOW_FLAG: async (params, context) => {
-    await setBadgeOk(context.tabId!, params.show)
+    if (context.tabId == null) {
+      return
+    }
+    await setBadgeOk(context.tabId, params.show)
   },
   SEND_SUMMARY_EMAIL: async (params, context) => {
     try {
@@ -151,24 +154,36 @@ chrome.runtime.onMessage.addListener((event: any, sender: chrome.runtime.Message
 
 // 点击扩展图标
 chrome.action.onClicked.addListener(async (tab) => {
+  const tabId = tab.id
+  if (tabId == null) {
+    return
+  }
+
   chrome.storage.sync.get(STORAGE_ENV, (envDatas) => {
     const envDataStr = envDatas[STORAGE_ENV]
-    const envData = envDataStr ? JSON.parse(envDataStr) : {}
-    if (envData.sidePanel) {
+    let envData: Record<string, any> = {}
+    if (typeof envDataStr === 'string' && envDataStr.length > 0) {
+      try {
+        envData = JSON.parse(envDataStr)
+      } catch (error) {
+        console.error('Failed to parse env data:', error)
+      }
+    }
+    if (envData.sidePanel === true) {
       chrome.sidePanel.setOptions({
         enabled: true,
-        tabId: tab.id!,
-        path: '/sidepanel.html?tabId=' + tab.id,
+        tabId,
+        path: '/sidepanel.html?tabId=' + tabId,
       })
       chrome.sidePanel.setPanelBehavior({
         openPanelOnActionClick: true,
       })
       chrome.sidePanel.open({
-        tabId: tab.id!,
+        tabId,
       })
     } else {
       closeSidePanel()
-      extensionMessaging.sendMessage(false, tab.id!, TAG_TARGET_INJECT, 'TOGGLE_DISPLAY').catch(console.error)
+      extensionMessaging.sendMessage(false, tabId, TAG_TARGET_INJECT, 'TOGGLE_DISPLAY').catch(console.error)
     }
   })
 })

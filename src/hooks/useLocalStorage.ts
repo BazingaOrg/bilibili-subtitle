@@ -27,7 +27,7 @@ const useLocalStorage = <T = any>(type: StorageType | IStorage, key: string, dat
   const refresh = useCallback(async () => {
     const s = await getStore(key)
     let savedData: T | undefined
-    if (s) {
+    if (typeof s === 'string' && s.length > 0) {
       try {
         savedData = JSON.parse(s)
       } catch (e) {

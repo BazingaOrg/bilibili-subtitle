@@ -1,7 +1,6 @@
 import {useAppDispatch, useAppSelector} from './redux'
-import {useInterval} from 'ahooks'
+import {useInterval, useMemoizedFn} from 'ahooks'
 import useTranslate from './useTranslate'
-import { useMemoizedFn } from 'ahooks/es'
 import { buildSummaryEmailMarkdown, isSummaryEmpty } from '@/utils/bizUtil'
 import { useMessage } from './useMessageService'
 import dayjs from 'dayjs'
@@ -14,7 +13,10 @@ import {logMessagingError} from '@/utils/messageError'
  * Service是单例，类似后端的服务概念
  */
 const useTranslateService = () => {
+  const emailToastIdPrefix = 'summary-email-status-'
+  const summaryDoneToastIdPrefix = 'summary-done-status-'
   const sendingVideoKeyRef = useRef<string | undefined>(undefined)
+  const summaryDoneVideoKeyRef = useRef<string | undefined>(undefined)
   const retryAtMapRef = useRef<Record<string, number>>({})
   const lastErrorToastAtRef = useRef<number>(0)
   const dispatch = useAppDispatch()
@@ -28,13 +30,15 @@ const useTranslateService = () => {
   const author = useAppSelector(state => state.env.author)
   const lastSummarizeTime = useAppSelector(state => state.env.lastSummarizeTime)
   const {getTask} = useTranslate()
-  const {sendExtension} = useMessage(!!envData.sidePanel)
+  const {sendExtension} = useMessage(Boolean(envData.sidePanel))
 
   const tryAutoSendSummaryEmail = useMemoizedFn(async () => {
-    if (!envData.emailAutoSendEnabled) {
+    if (envData.emailAutoSendEnabled !== true) {
       return
     }
-    if (!envData.emailRecipient?.trim() || !envData.emailWebhookUrl?.trim()) {
+    const emailRecipient = envData.emailRecipient?.trim() ?? ''
+    const emailWebhookUrl = envData.emailWebhookUrl?.trim() ?? ''
+    if (emailRecipient.length === 0 || emailWebhookUrl.length === 0) {
       return
     }
     if (segments == null || segments.length === 0) {
@@ -57,22 +61,35 @@ const useTranslateService = () => {
     if (!allSummaryDone) {
       return
     }
+    if (summaryDoneVideoKeyRef.current !== videoKey) {
+      summaryDoneVideoKeyRef.current = videoKey
+      toast.success('当前视频分段总结已全部完成（点击可关闭）', {
+        id: `${summaryDoneToastIdPrefix}${videoKey}`,
+        duration: Infinity,
+      })
+    }
 
     const hasSuccessSummary = segments.some((segment) => {
       const summary = segment.summaries.brief
-      return summary?.status === 'done' && !summary.error && !isSummaryEmpty(summary)
+      return summary?.status === 'done' && summary.error == null && !isSummaryEmpty(summary)
     })
     if (!hasSuccessSummary) {
       dispatch(setTempData({ summaryEmailSentVideoKey: videoKey }))
-      toast.error('No successful summary found, email skipped.')
+      toast.error('没有可发送的有效总结，已跳过自动邮件（点击可关闭）', {
+        id: `${emailToastIdPrefix}${videoKey}`,
+        duration: Infinity,
+      })
       return
     }
 
-    const publishedAt = ctime ? dayjs(ctime * 1000).format('YYYY-MM-DD HH:mm:ss') : ''
+    const publishedAt = ctime != null ? dayjs(ctime * 1000).format('YYYY-MM-DD HH:mm:ss') : ''
     const email = buildSummaryEmailMarkdown({
       segments,
     })
-    const subjectTemplate = envData.emailSubjectTemplate?.trim() || '[Bilibili Summary] {{title}}'
+    const configuredSubjectTemplate = envData.emailSubjectTemplate?.trim()
+    const subjectTemplate = configuredSubjectTemplate != null && configuredSubjectTemplate.length > 0
+      ? configuredSubjectTemplate
+      : '[Bilibili Summary] {{title}}'
     const subject = subjectTemplate
       .replaceAll('{{title}}', title ?? 'Untitled')
       .replaceAll('{{author}}', author ?? '')
@@ -81,9 +98,9 @@ const useTranslateService = () => {
     sendingVideoKeyRef.current = videoKey
     try {
       const response = await sendExtension(null, 'SEND_SUMMARY_EMAIL', {
-        webhookUrl: envData.emailWebhookUrl.trim(),
+        webhookUrl: emailWebhookUrl,
         payload: {
-          to: envData.emailRecipient.trim(),
+          to: emailRecipient,
           subject,
           markdown: email.markdown,
           videoMeta: {
@@ -98,14 +115,20 @@ const useTranslateService = () => {
 
       if (response.ok) {
         dispatch(setTempData({ summaryEmailSentVideoKey: videoKey }))
-        delete retryAtMapRef.current[videoKey]
-        toast.success('Summary email sent.')
+        retryAtMapRef.current[videoKey] = 0
+        toast.success('总结邮件发送成功（点击可关闭）', {
+          id: `${emailToastIdPrefix}${videoKey}`,
+          duration: Infinity,
+        })
       } else {
         // Retry later instead of permanently suppressing this video.
         retryAtMapRef.current[videoKey] = Date.now() + 10 * 1000
         if (Date.now() - lastErrorToastAtRef.current >= 10 * 1000) {
           lastErrorToastAtRef.current = Date.now()
-          toast.error(response.error ?? 'Summary email send failed.')
+          toast.error(`总结邮件发送失败：${response.error ?? '未知错误'}（点击可关闭）`, {
+            id: `${emailToastIdPrefix}${videoKey}`,
+            duration: Infinity,
+          })
         }
       }
     } finally {

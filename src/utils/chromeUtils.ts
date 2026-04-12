@@ -1,5 +1,5 @@
 export const openOptionsPage = () => {
-  if (chrome.runtime.openOptionsPage) {
+  if (typeof chrome.runtime.openOptionsPage === 'function') {
     chrome.runtime.openOptionsPage()
   } else {
     window.open(chrome.runtime.getURL('options.html'))

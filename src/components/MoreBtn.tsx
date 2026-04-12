@@ -71,7 +71,7 @@ const MoreBtn = (props: Props) => {
   const ctime = useAppSelector(state => state.env.ctime) // 时间戳，单位s
   const author = useAppSelector(state => state.env.author)
 
-  const {sendInject} = useMessage(!!envData.sidePanel)
+  const {sendInject} = useMessage(Boolean(envData.sidePanel))
 
   const downloadCallback = useCallback((download: boolean) => {
     if (data == null) {
@@ -80,8 +80,8 @@ const MoreBtn = (props: Props) => {
 
     let fileName = title
     let s, suffix
-    const time = ctime ? dayjs(ctime * 1000).format('YYYY-MM-DD HH:mm:ss') : '' // 2024-05-01 12:00:00
-    if (!downloadType || downloadType === 'text') {
+    const time = ctime != null ? dayjs(ctime * 1000).format('YYYY-MM-DD HH:mm:ss') : '' // 2024-05-01 12:00:00
+    if (downloadType == null || downloadType === 'text') {
       s = `${title??'无标题'}\n${url??'无链接'}\n${author??'无作者'} ${time}\n\n`
       for (const item of data.body) {
         s += item.content + '\n'
@@ -181,7 +181,7 @@ const MoreBtn = (props: Props) => {
 
   const moreCallback = useCallback((e: MouseEvent) => {
     e.stopPropagation()
-    if (!envData.flagDot) {
+    if (envData.flagDot !== true) {
       dispatch(setEnvData({
         ...envData,
         flagDot: true,
@@ -202,7 +202,7 @@ const MoreBtn = (props: Props) => {
   return <>
   <div ref={moreRef} onClick={moreCallback}>
     <div className='indicator flex items-center'>
-      {envReady && !envData.flagDot && <span className="indicator-item bg-secondary w-1.5 h-1.5 rounded-full"></span>}
+      {envReady && envData.flagDot !== true && <span className="indicator-item bg-secondary w-1.5 h-1.5 rounded-full"></span>}
       <FiMoreVertical className='desc transform ease-in duration-300 hover:text-primary' title='更多'/>
     </div>
   </div>
@@ -249,47 +249,6 @@ const MoreBtn = (props: Props) => {
             下载音频(m4s)
           </a>
         </li>
-        {/* <li className='hover:bg-accent'>
-          <a className='flex items-center' onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            openUrl('https://jq.qq.com/?_wv=1027&k=RJyFABPF')
-          }}>
-            <BsFillChatDotsFill className='w-[20px] h-[20px] text-primary/75 bg-white rounded-sm p-0.5'/>
-            QQ交流群(194536885)
-          </a>
-        </li>
-        <li className='hover:bg-accent'>
-          <a className='flex items-center' onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            openUrl('https://static.ssstab.com/images/indiekky_public.png')
-          }}>
-            <AiFillWechat className='w-[20px] h-[20px] text-primary/75 bg-white rounded-sm p-0.5'/>
-            微信公众号(IndieKKY)
-          </a>
-        </li> */}
-        {/* <li className='hover:bg-accent'> */}
-        {/*  <a className='flex items-center' onClick={(e) => { */}
-        {/*    e.preventDefault() */}
-        {/*    e.stopPropagation() */}
-        {/*    openUrl('https://bibigpt.co/r/bilibili') */}
-        {/*  }}> */}
-        {/*    <img alt='BibiGPT' src='/bibigpt.png' className='w-[20px] h-[20px] bg-white rounded-sm p-0.5'/> */}
-        {/*    BibiGPT */}
-        {/*  </a> */}
-        {/* </li> */}
-        {/* <li className='hover:bg-accent'> */}
-        {/*  <a className='flex items-center' onClick={(e) => { */}
-        {/*    e.preventDefault() */}
-        {/*    e.stopPropagation() */}
-        {/*    openUrl('https://chromewebstore.google.com/detail/fiaeclpicddpifeflpmlgmbjgaedladf') */}
-        {/*  }}> */}
-        {/*    <img alt='youtube subtitle' src='/youtube-caption.png' */}
-        {/*         className='w-[20px] h-[20px] bg-white rounded-sm p-0.5'/> */}
-        {/*    Youtube Caption */}
-        {/*  </a> */}
-        {/* </li> */}
         <li className='hover:bg-base-200'>
           <a className='flex items-center' onClick={(e) => {
             chrome.runtime.openOptionsPage()

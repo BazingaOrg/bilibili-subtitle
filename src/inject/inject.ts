@@ -17,7 +17,7 @@ const debug = (...args: any[]) => {
   const envDataStr = (await chrome.storage.sync.get(STORAGE_ENV))[STORAGE_ENV]
   let sidePanel: boolean | null = null
   let manualInsert: boolean | null = null
-  if (envDataStr) {
+  if (typeof envDataStr === 'string' && envDataStr.length > 0) {
     try {
       const envData = JSON.parse(envDataStr)
       debug('envData: ', envData)
@@ -67,9 +67,9 @@ const debug = (...args: any[]) => {
   }
 
   const createIframe = () => {
-    var danmukuBox = document.getElementById('danmukuBox')
-    if (danmukuBox) {
-      var vKey = ''
+    const danmukuBox = document.getElementById('danmukuBox')
+    if (danmukuBox != null) {
+      let vKey = ''
       for (const key in danmukuBox?.dataset) {
         if (key.startsWith('v-')) {
           vKey = key
@@ -92,7 +92,7 @@ const debug = (...args: any[]) => {
       iframe.style.setProperty('-webkit-mask-image', '-webkit-radial-gradient(white, black)')
       iframe.allow = 'clipboard-read; clipboard-write;'
 
-      if (vKey) {
+      if (vKey.length > 0) {
         iframe.dataset[vKey] = danmukuBox?.dataset[vKey]
       }
 
@@ -110,10 +110,10 @@ const debug = (...args: any[]) => {
     }
   }
 
-  if (!sidePanel && !manualInsert) {
+  if (sidePanel !== true && manualInsert !== true) {
     const timerIframe = setInterval(function () {
-      var danmukuBox = document.getElementById('danmukuBox')
-      if (danmukuBox) {
+      const danmukuBox = document.getElementById('danmukuBox')
+      if (danmukuBox != null) {
         clearInterval(timerIframe)
 
         // 延迟插入iframe（插入太快，网络较差时容易出现b站网页刷新，原因暂时未知，可能b站的某种机制？）
@@ -132,7 +132,7 @@ const debug = (...args: any[]) => {
   const buildCanonicalVideoUrl = (canonicalVideoId: string, pageNumber?: string) => {
     const baseUrl = `${location.origin}/video/${canonicalVideoId}/`
 
-    if (!pageNumber || pageNumber === '1') {
+    if (pageNumber == null || pageNumber === '1') {
       return baseUrl
     }
 
@@ -144,20 +144,19 @@ const debug = (...args: any[]) => {
     if (force) {
       lastAidOrBvid = null
     }
-    if (!sidePanel) {
+    if (sidePanel !== true) {
       const iframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | undefined
-      if (!iframe) return
+      if (iframe == null) return
     }
 
-    // fix: https://github.com/IndieKKY/bilibili-subtitle/issues/5
-    // 处理稍后再看的url( https://www.bilibili.com/list/watchlater?bvid=xxx&oid=xxx )
+    // Handle watch-later URLs: https://www.bilibili.com/list/watchlater?bvid=xxx&oid=xxx
     const pathSearchs: Record<string, string> = {}
     // eslint-disable-next-line no-return-assign
     location.search.slice(1).replace(/([^=&]*)=([^=&]*)/g, (matchs, a, b, c) => pathSearchs[a] = b)
 
     // bvid
     let aidOrBvid = pathSearchs.bvid // 默认为稍后再看
-    if (!aidOrBvid) {
+    if (aidOrBvid == null || aidOrBvid.length === 0) {
       let path = location.pathname
       if (path.endsWith('/')) {
         path = path.slice(0, -1)
@@ -170,7 +169,7 @@ const debug = (...args: any[]) => {
       // console.debug('refreshVideoInfo')
 
       lastAidOrBvid = aidOrBvid
-      if (aidOrBvid) {
+      if (aidOrBvid.length > 0) {
         // aid,pages
         let cid: string | undefined
         /**
@@ -202,10 +201,12 @@ const debug = (...args: any[]) => {
           ctime = pages[0].ctime
           author = pages[0].owner?.name
           title = pages[0].part
-          await fetch(`https://api.bilibili.com/x/player/wbi/v2?aid=${aid}&cid=${cid!}`, { credentials: 'include' }).then(async res => await res.json()).then(res => {
-            chapters = res.data.view_points ?? []
-            subtitles = res.data.subtitle.subtitles
-          })
+          if (cid != null) {
+            await fetch(`https://api.bilibili.com/x/player/wbi/v2?aid=${aid}&cid=${cid}`, { credentials: 'include' }).then(async res => await res.json()).then(res => {
+              chapters = res.data.view_points ?? []
+              subtitles = res.data.subtitle.subtitles
+            })
+          }
         } else { // bvxxx
           canonicalVideoId = aidOrBvid
           await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${aidOrBvid}`, { credentials: 'include' }).then(async res => await res.json()).then(async res => {
@@ -216,10 +217,12 @@ const debug = (...args: any[]) => {
             author = res.data.owner?.name
             pages = res.data.pages
           })
-          await fetch(`https://api.bilibili.com/x/player/wbi/v2?aid=${aid!}&cid=${cid!}`, { credentials: 'include' }).then(async res => await res.json()).then(res => {
-            chapters = res.data.view_points ?? []
-            subtitles = res.data.subtitle.subtitles
-          })
+          if (aid != null && cid != null) {
+            await fetch(`https://api.bilibili.com/x/player/wbi/v2?aid=${aid}&cid=${cid}`, { credentials: 'include' }).then(async res => await res.json()).then(res => {
+              chapters = res.data.view_points ?? []
+              subtitles = res.data.subtitle.subtitles
+            })
+          }
         }
 
         // 筛选chapters里type为2的
@@ -236,7 +239,7 @@ const debug = (...args: any[]) => {
         const canonicalVideoUrl = buildCanonicalVideoUrl(canonicalVideoId, pathSearchs.p)
 
         // send setVideoInfo
-        runtime.injectMessaging.sendApp(!!sidePanel, 'SET_VIDEO_INFO', {
+        runtime.injectMessaging.sendApp(Boolean(sidePanel), 'SET_VIDEO_INFO', {
           url: canonicalVideoUrl,
           title,
           aid,
@@ -253,15 +256,15 @@ const debug = (...args: any[]) => {
   let lastAid: number | null = null
   let lastCid: number | null = null
   const refreshSubtitles = () => {
-    if (!sidePanel) {
+    if (sidePanel !== true) {
       const iframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | undefined
-      if (!iframe) return
+      if (iframe == null) return
     }
 
     const urlSearchParams = new URLSearchParams(window.location.search)
-    const p = urlSearchParams.get('p') || 1
+    const p = urlSearchParams.get('p') ?? '1'
     const page = pagesMap[p]
-    if (!page) return
+    if (page == null) return
     const cid: number | null = page.cid
 
     if (aid !== lastAid || cid !== lastCid) {
@@ -269,7 +272,7 @@ const debug = (...args: any[]) => {
 
       lastAid = aid
       lastCid = cid
-      if (aid && cid) {
+      if (aid != null && cid != null) {
         fetch(`https://api.bilibili.com/x/player/wbi/v2?aid=${aid}&cid=${cid}`, {
           credentials: 'include',
         })
@@ -278,7 +281,7 @@ const debug = (...args: any[]) => {
             // remove elements with empty subtitle_url
             res.data.subtitle.subtitles = res.data.subtitle.subtitles.filter((item: any) => item.subtitle_url)
             if (res.data.subtitle.subtitles.length > 0) {
-              runtime.injectMessaging.sendApp(!!sidePanel, 'SET_INFOS', {
+              runtime.injectMessaging.sendApp(Boolean(sidePanel), 'SET_INFOS', {
                 infos: res.data.subtitle.subtitles
               })
             }
@@ -323,8 +326,11 @@ const debug = (...args: any[]) => {
     },
     GET_SUBTITLE: async (params) => {
       let url = params.info.subtitle_url
-      if (url.startsWith('http://')) {
+      if (typeof url === 'string' && url.startsWith('http://')) {
         url = url.replace('http://', 'https://')
+      }
+      if (typeof url !== 'string' || url.length === 0) {
+        throw new Error('Invalid subtitle url')
       }
       return await fetch(url).then(async res => await res.json())
     },
@@ -376,9 +382,9 @@ const debug = (...args: any[]) => {
   runtime.injectMessaging.init(methods)
 
   setInterval(() => {
-    if (!sidePanel) {
+    if (sidePanel !== true) {
       const iframe = document.getElementById(IFRAME_ID) as HTMLIFrameElement | undefined
-      if (!iframe || iframe.style.display === 'none') return
+      if (iframe == null || iframe.style.display === 'none') return
     }
 
     refreshVideoInfo().catch(console.error)

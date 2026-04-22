@@ -10,11 +10,11 @@ import {
 import { useAppDispatch, useAppSelector } from '../hooks/redux'
 import {
   AiOutlineAim,
-  AiOutlineCloseCircle,
-  FaRegArrowAltCircleDown,
-  IoWarning,
-  MdExpand
-} from 'react-icons/all'
+  AiOutlineCloseCircle
+} from 'react-icons/ai'
+import {FaClipboardList, FaRegArrowAltCircleDown} from 'react-icons/fa'
+import {IoMdWarning} from 'react-icons/io'
+import {MdExpandMore} from 'react-icons/md'
 import classNames from 'classnames'
 import toast from 'react-hot-toast'
 import SegmentCard from './SegmentCard'
@@ -24,7 +24,6 @@ import {
   SUMMARIZE_ALL_THRESHOLD,
   TITLE_HEIGHT
 } from '../consts/const'
-import { FaClipboardList } from 'react-icons/fa'
 import useTranslate from '../hooks/useTranslate'
 import useKeyService from '../hooks/useKeyService'
 import RateExtension from '../components/RateExtension'
@@ -135,7 +134,7 @@ const Body = () => {
     <div className='absolute top-1 left-6 flex-center gap-1'>
       <AiOutlineAim className='cursor-pointer' onClick={posCallback} title='滚动到视频位置' />
       {segments != null && segments.length > 0 &&
-        <MdExpand className={classNames('cursor-pointer', foldAll === true ? 'text-accent' : '')} onClick={onFoldAll}
+        <MdExpandMore className={classNames('cursor-pointer', foldAll === true ? 'text-accent' : '')} onClick={onFoldAll}
           title='展开/折叠全部' />}
     </div>
     <div className='flex justify-center'>
@@ -152,7 +151,7 @@ const Body = () => {
           <FaClipboardList />
         </div>}
       {noVideo === true && <div className='tooltip tooltip-left ml-2' data-tip='当前浏览器不支持视频跳转'>
-        <IoWarning className='text-warning' />
+        <IoMdWarning className='text-warning' />
       </div>}
     </div>
 

@@ -2,10 +2,10 @@ import {MouseEvent, useCallback, useContext, useRef, useState} from 'react'
 import {useClickAway} from 'ahooks'
 import {
   FiMoreVertical,
-  ImDownload3,
-  IoMdSettings,
-  RiFileCopy2Line
-} from 'react-icons/all'
+} from 'react-icons/fi'
+import {ImDownload3} from 'react-icons/im'
+import {IoMdSettings} from 'react-icons/io'
+import {RiFileCopy2Line} from 'react-icons/ri'
 import Popover from '../components/Popover'
 import {Placement} from '@popperjs/core/lib/enums'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'

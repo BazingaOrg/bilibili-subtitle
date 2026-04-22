@@ -13,7 +13,7 @@ import {
   SUMMARIZE_LANGUAGE_DEFAULT,
   WORDS_RATE,
 } from '../consts/const'
-import {IoWarning} from 'react-icons/all'
+import {IoMdWarning} from 'react-icons/io'
 import classNames from 'classnames'
 import toast from 'react-hot-toast'
 import {useEventTarget} from 'ahooks'
@@ -411,7 +411,7 @@ const OptionsPage = () => {
       <OptionCard title={<div className='flex items-center'>
         总结配置
         {!apiKeySetted && <div className='tooltip tooltip-right ml-1' data-tip='未设置ApiKey无法使用'>
-          <IoWarning className='text-sm text-warning'/>
+          <IoMdWarning className='text-sm text-warning'/>
         </div>}
       </div>}>
         <FormItem title='启用总结' htmlFor='summarizeEnable'>

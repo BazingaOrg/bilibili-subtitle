@@ -191,6 +191,16 @@ const OptionsPage = () => {
     setApiKeyConfiguredValue(envData.apiKeyConfigured === true)
   }, [envData.apiKeyConfigured])
 
+  useEffect(() => {
+    sendExtension(null, 'GET_API_SECRET_STATUS').then((response) => {
+      setApiKeyConfiguredValue(response.configured)
+      setClearSavedApiKey(false)
+      dispatch(setEnvData({
+        apiKeyConfigured: response.configured,
+      }))
+    }).catch(console.error)
+  }, [dispatch, sendExtension])
+
   const discoverModelsAndApply = useCallback(async (nextModelValue?: string) => {
     const trimmedApiKeyValue = typeof apiKeyValue === 'string' ? apiKeyValue.trim() : ''
     if (trimmedApiKeyValue.length === 0 && !apiKeyConfiguredValue) {
@@ -297,6 +307,9 @@ const OptionsPage = () => {
         }
 
         applyFormEnvData(mergedEnvData)
+        dispatch(setEnvData({
+          apiKeyConfigured: mergedEnvData.apiKeyConfigured === true,
+        }))
         toast.success('配置已导入，API key 已恢复到本地存储，请点击“保存”后生效')
       } catch (error) {
         if (error instanceof ConfigTransferError) {
@@ -355,6 +368,9 @@ const OptionsPage = () => {
     setApiKeyConfiguredValue(nextApiKeyConfigured)
     setClearSavedApiKey(false)
     triggerValueChange(onChangeApiKeyValue, '')
+    dispatch(setEnvData({
+      apiKeyConfigured: nextApiKeyConfigured,
+    }))
     toast.success('保存成功')
     sendExtension(null, 'CLOSE_SIDE_PANEL')
     // 3秒后关闭

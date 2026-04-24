@@ -93,7 +93,13 @@ interface ExtensionGetApiSecretStatusMessage extends ExtensionMessage<{}, {
   method: 'GET_API_SECRET_STATUS'
 }
 
-export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionUpsertSummarySessionMessage | ExtensionGetSummarySessionMessage | ExtensionDiscoverModelsMessage | ExtensionSetApiSecretMessage | ExtensionClearApiSecretMessage | ExtensionGetApiSecretStatusMessage
+interface ExtensionGetApiSecretMessage extends ExtensionMessage<{}, {
+  apiKey?: string
+}> {
+  method: 'GET_API_SECRET'
+}
+
+export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionUpsertSummarySessionMessage | ExtensionGetSummarySessionMessage | ExtensionDiscoverModelsMessage | ExtensionSetApiSecretMessage | ExtensionClearApiSecretMessage | ExtensionGetApiSecretStatusMessage | ExtensionGetApiSecretMessage
 
 // inject
 interface InjectToggleDisplayMessage extends InjectMessage<{}> {

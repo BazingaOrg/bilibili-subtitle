@@ -7,6 +7,7 @@ import { handleRes } from '../util'
 const SENSITIVE_EXTENSION_METHODS = new Set([
   'DISCOVER_MODELS',
   'SET_API_SECRET',
+  'GET_API_SECRET',
 ])
 
 const useMessaging = <AllExtensionMessagesType extends ExtensionMessage, AllInjectMessagesType extends InjectMessage>(defaultUsePort: boolean) => {

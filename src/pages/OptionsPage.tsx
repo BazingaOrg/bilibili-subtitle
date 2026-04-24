@@ -244,7 +244,11 @@ const OptionsPage = () => {
     }
 
     try {
-      const encryptedConfig = await encryptEnvDataForExport(getFormEnvData(), passphrase)
+      const {apiKey} = await sendExtension(null, 'GET_API_SECRET', {})
+      const encryptedConfig = await encryptEnvDataForExport({
+        envData: getFormEnvData(),
+        apiKey,
+      }, passphrase)
       downloadText(JSON.stringify(encryptedConfig, null, 2), exportConfigFilename())
       toast.success('配置导出成功')
     } catch (error) {
@@ -274,10 +278,18 @@ const OptionsPage = () => {
 
       try {
         const fileText = await file.text()
-        const importedEnvData = await decryptEnvDataFromImport(fileText, passphrase)
+        const importedConfig = await decryptEnvDataFromImport(fileText, passphrase)
+        if (typeof importedConfig.apiKey === 'string' && importedConfig.apiKey.length > 0) {
+          await sendExtension(null, 'SET_API_SECRET', {
+            apiKey: importedConfig.apiKey,
+          })
+        }
         const mergedEnvData = sanitizeEnvData({
           ...getFormEnvData(),
-          ...importedEnvData,
+          ...importedConfig.envData,
+          apiKeyConfigured: typeof importedConfig.apiKey === 'string' && importedConfig.apiKey.length > 0
+            ? true
+            : importedConfig.envData.apiKeyConfigured,
         })
         if (mergedEnvData == null) {
           toast.error('导入的配置内容为空')
@@ -285,7 +297,7 @@ const OptionsPage = () => {
         }
 
         applyFormEnvData(mergedEnvData)
-        toast.success('配置已导入到表单，请点击“保存”后生效')
+        toast.success('配置已导入，API key 已恢复到本地存储，请点击“保存”后生效')
       } catch (error) {
         if (error instanceof ConfigTransferError) {
           toast.error(error.message)
@@ -295,7 +307,7 @@ const OptionsPage = () => {
       }
     }
     input.click()
-  }, [applyFormEnvData, getFormEnvData])
+  }, [applyFormEnvData, getFormEnvData, sendExtension])
 
   const onSave = useCallback(async () => {
     const trimmedApiKeyValue = typeof apiKeyValue === 'string' ? apiKeyValue.trim() : ''

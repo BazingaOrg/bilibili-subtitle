@@ -183,6 +183,12 @@ const methods: {
       configured: await hasApiSecret(),
     }
   },
+  GET_API_SECRET: async (params, context) => {
+    await ensureLegacyApiSecretReady()
+    return {
+      apiKey: await getApiSecret(),
+    }
+  },
 }
 // 初始化backgroundMessage
 const extensionMessaging = new ExtensionMessaging(DEFAULT_USE_PORT)

@@ -39,6 +39,11 @@ export interface ExportConfigV1 {
   payloadB64: string
 }
 
+interface ExportPayloadV1 {
+  envData: EnvData
+  apiKey?: string
+}
+
 const textEncoder = new TextEncoder()
 const textDecoder = new TextDecoder()
 
@@ -126,11 +131,21 @@ const assertExportConfigV1 = (data: unknown): ExportConfigV1 => {
 
 export const exportConfigFilename = () => 'makunabe-config.v1.json'
 
-export const encryptEnvDataForExport = async (envData: EnvData, passphrase: string): Promise<ExportConfigV1> => {
+export const encryptEnvDataForExport = async (params: {
+  envData: EnvData
+  apiKey?: string
+}, passphrase: string): Promise<ExportConfigV1> => {
   ensurePassphrase(passphrase)
 
-  const sanitized = sanitizeEnvData(stripTransientEnvData(envData)) ?? {}
-  const plainText = JSON.stringify(sanitized)
+  const sanitizedEnvData = sanitizeEnvData(stripTransientEnvData(params.envData)) ?? {}
+  const normalizedApiKey = typeof params.apiKey === 'string' && params.apiKey.trim().length > 0
+    ? params.apiKey.trim()
+    : undefined
+  const payload: ExportPayloadV1 = {
+    envData: sanitizedEnvData,
+    apiKey: normalizedApiKey,
+  }
+  const plainText = JSON.stringify(payload)
   const plainBytes = textEncoder.encode(plainText)
   const salt = crypto.getRandomValues(new Uint8Array(SALT_LENGTH))
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH))
@@ -159,7 +174,33 @@ export const encryptEnvDataForExport = async (envData: EnvData, passphrase: stri
   }
 }
 
-export const decryptEnvDataFromImport = async (rawText: string, passphrase: string): Promise<EnvData> => {
+const parseImportPayload = (data: unknown): ExportPayloadV1 => {
+  const sanitizedEnvData = sanitizeEnvData(stripTransientEnvData(data as EnvData))
+  if (sanitizedEnvData != null) {
+    return {
+      envData: sanitizedEnvData,
+    }
+  }
+
+  if (data == null || typeof data !== 'object') {
+    throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容为空')
+  }
+
+  const payload = data as Partial<ExportPayloadV1>
+  const sanitizedPayloadEnvData = sanitizeEnvData(stripTransientEnvData(payload.envData as EnvData))
+  if (sanitizedPayloadEnvData == null) {
+    throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容为空')
+  }
+
+  return {
+    envData: sanitizedPayloadEnvData,
+    apiKey: typeof payload.apiKey === 'string' && payload.apiKey.trim().length > 0
+      ? payload.apiKey.trim()
+      : undefined,
+  }
+}
+
+export const decryptEnvDataFromImport = async (rawText: string, passphrase: string): Promise<ExportPayloadV1> => {
   ensurePassphrase(passphrase)
 
   let parsed: unknown
@@ -194,10 +235,5 @@ export const decryptEnvDataFromImport = async (rawText: string, passphrase: stri
     throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容不是合法 JSON')
   }
 
-  const sanitized = sanitizeEnvData(stripTransientEnvData(envData as EnvData))
-  if (sanitized == null) {
-    throw new ConfigTransferError('INVALID_PAYLOAD', '解密后的配置内容为空')
-  }
-
-  return sanitized
+  return parseImportPayload(envData)
 }

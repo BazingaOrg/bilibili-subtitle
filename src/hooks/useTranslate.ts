@@ -119,7 +119,6 @@ const useTranslate = () => {
       },
       extra: {
         type: 'summarize',
-        apiKey: envData.apiKey,
         summarySessionKey,
         summaryRunStartedAt,
         summaryStrategyCode: summaryStrategy.code,
@@ -127,7 +126,6 @@ const useTranslate = () => {
         summaryAutoRepair: summaryStrategy.autoRepair,
       }
     }
-    console.debug('addSummarizeTask', taskDef)
     dispatch(setVideoSummaryState({
       type: 'brief',
       status: 'pending',

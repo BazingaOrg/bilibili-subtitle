@@ -2,10 +2,20 @@ import {TASK_EXPIRE_TIME} from '../consts/const'
 import {handleChatCompleteTask, repairSummaryJson} from './openaiService'
 import {finalizeVideoSummary, parseSummaryContentStrict, updateVideoSummaryStage} from './summarySessionService'
 import {ensureSummaryEmailSent} from './summaryEmailService'
+import {ensureLegacyApiSecretReady, getApiSecret} from './secretService'
 
 export const tasksMap = new Map<string, Task>()
 
-const tryRepairSummaryTaskContent = async (task: Task) => {
+const getApiSecretOrThrow = async () => {
+  await ensureLegacyApiSecretReady()
+  const apiKey = await getApiSecret()
+  if (apiKey == null) {
+    throw new Error('API key is not configured')
+  }
+  return apiKey
+}
+
+const tryRepairSummaryTaskContent = async (task: Task, apiKey: string) => {
   if (task.def.extra?.summaryAutoRepair !== true) {
     return
   }
@@ -31,7 +41,7 @@ const tryRepairSummaryTaskContent = async (task: Task) => {
 
   const repairedContent = await repairSummaryJson({
     serverUrl: task.def.serverUrl,
-    apiKey: task.def.extra?.apiKey,
+    apiKey,
     model: task.def.data?.model,
     content,
   })
@@ -47,7 +57,7 @@ const tryRepairSummaryTaskContent = async (task: Task) => {
   }
 }
 
-const rerunChatCompleteTask = async (task: Task) => {
+const rerunChatCompleteTask = async (task: Task, apiKey: string) => {
   if (task.def.extra?.summaryAutoRetry !== true) {
     throw new Error(task.error ?? 'Summary auto retry disabled')
   }
@@ -74,7 +84,7 @@ const rerunChatCompleteTask = async (task: Task) => {
 
   task.error = undefined
   task.resp = undefined
-  await handleChatCompleteTask(task)
+  await handleChatCompleteTask(task, apiKey)
 }
 
 export const handleTask = async (task: Task) => {
@@ -82,9 +92,11 @@ export const handleTask = async (task: Task) => {
   try {
     task.status = 'running'
     switch (task.def.type) {
-      case 'chatComplete':
-        await handleChatCompleteTask(task)
+      case 'chatComplete': {
+        const apiKey = await getApiSecretOrThrow()
+        await handleChatCompleteTask(task, apiKey)
         break
+      }
       default:
         // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         throw new Error(`任务类型不支持: ${task.def.type}`)
@@ -96,10 +108,12 @@ export const handleTask = async (task: Task) => {
 
     try {
       switch (task.def.type) {
-        case 'chatComplete':
-          await rerunChatCompleteTask(task)
+        case 'chatComplete': {
+          const apiKey = await getApiSecretOrThrow()
+          await rerunChatCompleteTask(task, apiKey)
           console.debug(`处理任务重试成功: ${task.id} (type: ${task.def.type})`)
           break
+        }
         default:
           throw e
       }
@@ -111,7 +125,8 @@ export const handleTask = async (task: Task) => {
 
   if (task.error == null && task.def.type === 'chatComplete') {
     try {
-      await tryRepairSummaryTaskContent(task)
+      const apiKey = await getApiSecretOrThrow()
+      await tryRepairSummaryTaskContent(task, apiKey)
     } catch (repairError: any) {
       console.debug(`总结修复失败，保留原始结果: ${task.id} (type: ${task.def.type})`, repairError?.message ?? repairError)
     }

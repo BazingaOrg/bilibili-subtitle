@@ -13,6 +13,7 @@ import useLocalStorage from './hooks/useLocalStorage'
 import {sanitizeEnvData, sanitizeTempData} from './utils/envSanitizer'
 import {setTheme} from './utils/bizUtil'
 import useSystemDarkMode from './hooks/useSystemDarkMode'
+import {useMessage} from './hooks/useMessageService'
 
 function App() {
   const dispatch = useAppDispatch()
@@ -22,6 +23,7 @@ function App() {
   const envReady = useAppSelector(state => state.env.envReady)
   const tempReady = useAppSelector(state => state.env.tempReady)
   const isSystemDarkMode = useSystemDarkMode()
+  const {sendExtension} = useMessage(false)
 
   // env数据
   const savedEnvData = useMemo(() => {
@@ -59,6 +61,14 @@ function App() {
     }
     setTheme(envData.theme)
   }, [envData.theme, isSystemDarkMode])
+
+  useEffect(() => {
+    sendExtension(null, 'GET_API_SECRET_STATUS', {}).then((response) => {
+      dispatch(setEnvData({
+        apiKeyConfigured: response.configured,
+      }))
+    }).catch(console.error)
+  }, [dispatch, sendExtension])
 
   return <div>
     <Toaster position={path === 'app'?'bottom-center':'top-center'}/>

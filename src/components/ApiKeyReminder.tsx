@@ -3,9 +3,9 @@ import { useAppSelector } from '../hooks/redux'
 import { openOptionsPage } from '../utils/chromeUtils'
 
 const ApiKeyReminder: React.FC = () => {
-  const apiKey = useAppSelector(state => state.env.envData.apiKey)
+  const apiKeyConfigured = useAppSelector(state => state.env.envData.apiKeyConfigured)
 
-  if (typeof apiKey === 'string' && apiKey.length > 0) {
+  if (apiKeyConfigured === true) {
     return null
   }
 

@@ -3,6 +3,20 @@ import {useAsyncEffect, useMemoizedFn} from 'ahooks/es'
 import {cloneDeep, isEqual} from 'lodash-es'
 import {getStorage, IStorage, StorageType} from '../utils/storage'
 
+const sanitizeDebugData = <T, >(data: T) => {
+  if (data == null || typeof data !== 'object') {
+    return data
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(data, 'apiKey')) {
+    return data
+  }
+
+  const nextData = {...(data as Record<string, unknown>)}
+  delete nextData.apiKey
+  return nextData
+}
+
 const useLocalStorage = <T = any>(type: StorageType | IStorage, key: string, data: T, onLoad: (data?: T) => void) => {
   const onLoadMemorized = useMemoizedFn(onLoad)
   const storage = useMemo(() => typeof type === 'string'?getStorage(type):type, [type])
@@ -16,7 +30,7 @@ const useLocalStorage = <T = any>(type: StorageType | IStorage, key: string, dat
       if (!isEqual(prevData.current, data)) {
         prevData.current = cloneDeep(data)
         setStore(key, JSON.stringify(data)).catch(console.error)
-        console.debug(`[local][${key}]存数据: `, data)
+        console.debug(`[local][${key}]存数据: `, sanitizeDebugData(data))
       } else {
         console.debug(`[local][${key}]数据未变化，存数据取消!`)
       }
@@ -36,7 +50,7 @@ const useLocalStorage = <T = any>(type: StorageType | IStorage, key: string, dat
     }
     prevData.current = cloneDeep(savedData)
     onLoadMemorized(savedData)
-    console.debug(`[local][${key}]读数据: `, savedData)
+    console.debug(`[local][${key}]读数据: `, sanitizeDebugData(savedData))
   }, [onLoadMemorized, getStore, key])
 
   // 读数据

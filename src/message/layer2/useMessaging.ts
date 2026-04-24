@@ -4,6 +4,11 @@ import { TAG_TARGET_INJECT } from '../const'
 import { ExtensionMessage, InjectMessage, MessagingExtensionMessages } from '../typings'
 import { handleRes } from '../util'
 
+const SENSITIVE_EXTENSION_METHODS = new Set([
+  'DISCOVER_MODELS',
+  'SET_API_SECRET',
+])
+
 const useMessaging = <AllExtensionMessagesType extends ExtensionMessage, AllInjectMessagesType extends InjectMessage>(defaultUsePort: boolean) => {
   const [disconnected, setDisconnected] = useState(false)
 
@@ -27,7 +32,7 @@ const useMessaging = <AllExtensionMessagesType extends ExtensionMessage, AllInje
         throw new Error('disconnected')
       }
       // send message
-      console.debug('pmh_sendMessage:', method, params)
+      console.debug('pmh_sendMessage:', method, SENSITIVE_EXTENSION_METHODS.has(String(method)) ? '[redacted]' : params)
       return handleRes(await pmh.sendMessage({
         from: 'app',
         target: 'extension',

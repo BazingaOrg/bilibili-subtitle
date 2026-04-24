@@ -1,4 +1,4 @@
-import React, {PropsWithChildren, useCallback, useMemo, useState} from 'react'
+import React, {PropsWithChildren, useCallback, useEffect, useMemo, useState} from 'react'
 import {setEnvData} from '../redux/envReducer'
 import {useAppDispatch, useAppSelector} from '../hooks/redux'
 import {
@@ -76,7 +76,9 @@ const OptionsPage = () => {
   const {value: emailAutoSendEnabledValue, setValue: setEmailAutoSendEnabledChecked, onChange: setEmailAutoSendEnabledValue} = useEventChecked(envData.emailAutoSendEnabled)
   const {value: summarizeFloatValue, setValue: setSummarizeFloatChecked, onChange: setSummarizeFloatValue} = useEventChecked(envData.summarizeFloat)
   const {value: chapterModeValue, setValue: setChapterModeChecked, onChange: setChapterModeValue} = useEventChecked(envData.chapterMode ?? true)
-  const [apiKeyValue, { onChange: onChangeApiKeyValue }] = useEventTarget({initialValue: envData.apiKey??''})
+  const [apiKeyValue, { onChange: onChangeApiKeyValue }] = useEventTarget({initialValue: ''})
+  const [apiKeyConfiguredValue, setApiKeyConfiguredValue] = useState(envData.apiKeyConfigured === true)
+  const [clearSavedApiKey, setClearSavedApiKey] = useState(false)
   const [serverUrlValue, setServerUrlValue] = useState(envData.serverUrl)
   const [modelValue, { onChange: onChangeModelValue }] = useEventTarget({initialValue: envData.model??MODEL_DEFAULT})
   const [customModelValue, { onChange: onChangeCustomModelValue }] = useEventTarget({initialValue: envData.customModel})
@@ -93,9 +95,15 @@ const OptionsPage = () => {
   const [fontSizeValue, setFontSizeValue] = useState(envData.fontSize)
   const [wordsValue, setWordsValue] = useState<number | undefined>(envData.words)
   const [promptsValue, setPromptsValue] = useState<{[key: string]: string}>(envData.prompts??{})
-  const apiKeySetted = useMemo(() => {
-    return typeof apiKeyValue === 'string' && apiKeyValue.length > 0
+  const hasPendingApiKeyInput = useMemo(() => {
+    return typeof apiKeyValue === 'string' && apiKeyValue.trim().length > 0
   }, [apiKeyValue])
+  const apiKeyAvailable = useMemo(() => {
+    if (clearSavedApiKey) {
+      return hasPendingApiKeyInput
+    }
+    return apiKeyConfiguredValue || hasPendingApiKeyInput
+  }, [apiKeyConfiguredValue, clearSavedApiKey, hasPendingApiKeyInput])
   const modelOptions = useMemo(() => {
     const selectedModel = (modelValue as string) ?? ''
     const options: Array<{code: string, name: string}> = discoveredModelsValue.map(modelName => ({
@@ -127,7 +135,7 @@ const OptionsPage = () => {
       sidePanel: sidePanelValue,
       manualInsert: autoInsertValue !== true,
       autoExpand: autoExpandValue,
-      apiKey: apiKeyValue,
+      apiKeyConfigured: apiKeyAvailable,
       serverUrl: serverUrlValue,
       model: modelValue,
       customModel: customModelValue,
@@ -147,7 +155,7 @@ const OptionsPage = () => {
       prompts: promptsValue,
       chapterMode: chapterModeValue,
     }
-  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyValue, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, summaryStrategyValue, wordsValue, fontSizeValue, promptsValue, chapterModeValue])
+  }, [sidePanelValue, autoInsertValue, autoExpandValue, apiKeyAvailable, serverUrlValue, modelValue, customModelValue, customModelTokensValue, discoveredModelsValue, themeValue, summarizeEnableValue, emailAutoSendEnabledValue, emailRecipientValue, emailWebhookUrlValue, emailSubjectTemplateValue, summarizeFloatValue, summarizeLanguageValue, summaryStrategyValue, wordsValue, fontSizeValue, promptsValue, chapterModeValue])
 
   const applyFormEnvData = useCallback((nextEnvData: EnvData) => {
     setSidePanelChecked(nextEnvData.sidePanel)
@@ -158,7 +166,9 @@ const OptionsPage = () => {
     setSummarizeFloatChecked(nextEnvData.summarizeFloat)
     setChapterModeChecked(nextEnvData.chapterMode ?? true)
 
-    triggerValueChange(onChangeApiKeyValue, nextEnvData.apiKey ?? '')
+    triggerValueChange(onChangeApiKeyValue, '')
+    setApiKeyConfiguredValue(nextEnvData.apiKeyConfigured === true)
+    setClearSavedApiKey(false)
     setServerUrlValue(nextEnvData.serverUrl)
     triggerValueChange(onChangeModelValue, nextEnvData.model ?? MODEL_DEFAULT)
     triggerValueChange(onChangeCustomModelValue, nextEnvData.customModel ?? '')
@@ -177,12 +187,24 @@ const OptionsPage = () => {
     setPromptsValue(nextEnvData.prompts ?? {})
   }, [setSidePanelChecked, setAutoInsertChecked, setAutoExpandChecked, setSummarizeEnableChecked, setEmailAutoSendEnabledChecked, setSummarizeFloatChecked, setChapterModeChecked, triggerValueChange, onChangeApiKeyValue, onChangeModelValue, onChangeCustomModelValue, onChangeSummarizeLanguageValue, onChangeSummaryStrategyValue, onChangeEmailRecipientValue, onChangeEmailWebhookUrlValue, onChangeEmailSubjectTemplateValue])
 
+  useEffect(() => {
+    setApiKeyConfiguredValue(envData.apiKeyConfigured === true)
+  }, [envData.apiKeyConfigured])
+
   const discoverModelsAndApply = useCallback(async (nextModelValue?: string) => {
+    const trimmedApiKeyValue = typeof apiKeyValue === 'string' ? apiKeyValue.trim() : ''
+    if (trimmedApiKeyValue.length === 0 && !apiKeyConfiguredValue) {
+      throw new Error('API key is not configured')
+    }
+    if (trimmedApiKeyValue.length === 0 && clearSavedApiKey) {
+      throw new Error('API key will be cleared after save')
+    }
+
     setModelDiscoveryStatus('loading')
     setModelDiscoveryError(undefined)
     const response = await sendExtension(null, 'DISCOVER_MODELS', {
       serverUrl: serverUrlValue,
-      apiKey: apiKeyValue,
+      apiKey: trimmedApiKeyValue.length > 0 ? trimmedApiKeyValue : undefined,
     })
     const models = response.models.filter(item => typeof item === 'string' && item.length > 0)
     if (models.length <= 0) {
@@ -203,7 +225,7 @@ const OptionsPage = () => {
       models,
       model: modelToUse as string,
     }
-  }, [apiKeyValue, modelValue, onChangeModelValue, sendExtension, serverUrlValue, triggerValueChange])
+  }, [apiKeyConfiguredValue, apiKeyValue, clearSavedApiKey, modelValue, onChangeModelValue, sendExtension, serverUrlValue, triggerValueChange])
 
   const onExportConfig = useCallback(async () => {
     const passphrase = window.prompt('请输入用于加密导出配置的口令：')
@@ -276,33 +298,58 @@ const OptionsPage = () => {
   }, [applyFormEnvData, getFormEnvData])
 
   const onSave = useCallback(async () => {
+    const trimmedApiKeyValue = typeof apiKeyValue === 'string' ? apiKeyValue.trim() : ''
+    let nextApiKeyConfigured = apiKeyConfiguredValue
+
+    if (clearSavedApiKey) {
+      await sendExtension(null, 'CLEAR_API_SECRET', {})
+      nextApiKeyConfigured = false
+    }
+
+    if (trimmedApiKeyValue.length > 0) {
+      await sendExtension(null, 'SET_API_SECRET', {
+        apiKey: trimmedApiKeyValue,
+      })
+      nextApiKeyConfigured = true
+    }
+
     let nextModel = (modelValue as string) ?? MODEL_DEFAULT
     let nextDiscoveredModels = discoveredModelsValue
-    try {
-      const modelResult = await discoverModelsAndApply(nextModel)
-      nextModel = modelResult.model
-      nextDiscoveredModels = modelResult.models
-    } catch (error: any) {
-      const errorMessage = error?.message ?? '无法从服务端加载模型列表'
-      const displayMessage = `模型发现失败：${String(errorMessage)}`
-      setModelDiscoveryStatus('error')
-      setModelDiscoveryError(displayMessage)
-      toast.error('模型发现失败，已保留当前模型')
+
+    if (nextApiKeyConfigured) {
+      try {
+        const modelResult = await discoverModelsAndApply(nextModel)
+        nextModel = modelResult.model
+        nextDiscoveredModels = modelResult.models
+      } catch (error: any) {
+        const errorMessage = error?.message ?? '无法从服务端加载模型列表'
+        const displayMessage = `模型发现失败：${String(errorMessage)}`
+        setModelDiscoveryStatus('error')
+        setModelDiscoveryError(displayMessage)
+        toast.error('模型发现失败，已保留当前模型')
+      }
+    } else {
+      setModelDiscoveryStatus('idle')
+      setModelDiscoveryError(undefined)
     }
 
     dispatch(setEnvData({
       ...getFormEnvData(),
+      apiKeyConfigured: nextApiKeyConfigured,
       model: nextModel,
       discoveredModels: nextDiscoveredModels,
       modelDiscoveryUpdatedAt: Date.now(),
     }))
+    setApiKeyConfiguredValue(nextApiKeyConfigured)
+    setClearSavedApiKey(false)
+    triggerValueChange(onChangeApiKeyValue, '')
     toast.success('保存成功')
     sendExtension(null, 'CLOSE_SIDE_PANEL')
     // 3秒后关闭
     setTimeout(() => {
       window.close()
     }, 3000)
-  }, [discoverModelsAndApply, dispatch, discoveredModelsValue, getFormEnvData, modelValue, sendExtension])
+  }, [apiKeyConfiguredValue, apiKeyValue, clearSavedApiKey, discoverModelsAndApply, dispatch, discoveredModelsValue, getFormEnvData, modelValue, onChangeApiKeyValue, sendExtension, triggerValueChange])
 
   const onCancel = useCallback(() => {
     window.close()
@@ -320,6 +367,14 @@ const OptionsPage = () => {
       toast.error('模型发现失败')
     }
   }, [discoverModelsAndApply])
+
+  const onClearSavedApiKey = useCallback(() => {
+    triggerValueChange(onChangeApiKeyValue, '')
+    setApiKeyConfiguredValue(false)
+    setClearSavedApiKey(true)
+    setModelDiscoveryStatus('idle')
+    setModelDiscoveryError(undefined)
+  }, [onChangeApiKeyValue, triggerValueChange])
 
   const onSelTheme1 = useCallback(() => {
     setThemeValue('system')
@@ -381,8 +436,27 @@ const OptionsPage = () => {
 
       <OptionCard title="AI 配置">
         {<FormItem title='ApiKey' htmlFor='apiKey'>
-          <input id='apiKey' type='text' className='input input-sm input-bordered w-full' placeholder='sk-xxx'
-                 value={apiKeyValue} onChange={onChangeApiKeyValue}/>
+          <div className='flex flex-col gap-2'>
+            <input id='apiKey' type='password' className='input input-sm input-bordered w-full' placeholder='sk-...'
+                   value={apiKeyValue} onChange={(event) => {
+                     setClearSavedApiKey(false)
+                     onChangeApiKeyValue(event)
+                   }}/>
+            <div className='flex flex-wrap items-center gap-2 text-xs desc-lighter'>
+              <span>
+                {clearSavedApiKey
+                  ? 'Saved API key will be cleared after you save.'
+                  : (apiKeyConfiguredValue
+                    ? 'A saved API key already exists in the extension background.'
+                    : 'No saved API key yet.')}
+              </span>
+              {apiKeyConfiguredValue && !clearSavedApiKey && (
+                <button className='btn btn-xs btn-outline' onClick={onClearSavedApiKey}>
+                  Clear saved key
+                </button>
+              )}
+            </div>
+          </div>
         </FormItem>}
         {<FormItem title='服务器' htmlFor='serverUrl'>
           <input id='serverUrl' type='text' className='input input-sm input-bordered w-full'
@@ -418,7 +492,7 @@ const OptionsPage = () => {
 
       <OptionCard title={<div className='flex items-center'>
         总结配置
-        {!apiKeySetted && <div className='tooltip tooltip-right ml-1' data-tip='未设置ApiKey无法使用'>
+        {!apiKeyAvailable && <div className='tooltip tooltip-right ml-1' data-tip='未设置ApiKey无法使用'>
           <IoMdWarning className='text-sm text-warning'/>
         </div>}
       </div>}>

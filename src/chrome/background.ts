@@ -6,6 +6,7 @@ import { ExtensionMessaging, TAG_TARGET_INJECT } from '../message'
 import {discoverModels} from './openaiService'
 import {cleanupSummarySessions, getSummarySession, markVideoSummaryPending, upsertSummarySession} from './summarySessionService'
 import {retrySummaryEmailFromAlarm} from './summaryEmailService'
+import {clearApiSecret, ensureLegacyApiSecretReady, getApiSecret, hasApiSecret, setApiSecret} from './secretService'
 
 const setBadgeOk = async (tabId: number, ok: boolean) => {
   await chrome.action.setBadgeText({
@@ -117,7 +118,15 @@ const methods: {
     // 返回任务
     return {
       code: 'ok',
-      task,
+      task: {
+        ...task,
+        def: {
+          ...task.def,
+          extra: task.def.extra == null
+            ? undefined
+            : Object.fromEntries(Object.entries(task.def.extra).filter(([key]) => key !== 'apiKey')),
+        },
+      },
     }
   },
   SHOW_FLAG: async (params, context) => {
@@ -143,10 +152,36 @@ const methods: {
     return await getSummarySession(params.sessionKey)
   },
   DISCOVER_MODELS: async (params, context) => {
+    await ensureLegacyApiSecretReady()
+    const apiKey = typeof params.apiKey === 'string' && params.apiKey.trim().length > 0
+      ? params.apiKey.trim()
+      : await getApiSecret()
+    if (apiKey == null) {
+      throw new Error('API key is not configured')
+    }
+
     return await discoverModels({
       serverUrl: params.serverUrl,
-      apiKey: params.apiKey,
+      apiKey,
     })
+  },
+  SET_API_SECRET: async (params, context) => {
+    await setApiSecret(params.apiKey)
+    return {
+      configured: true,
+    }
+  },
+  CLEAR_API_SECRET: async (params, context) => {
+    await clearApiSecret()
+    return {
+      configured: false,
+    }
+  },
+  GET_API_SECRET_STATUS: async (params, context) => {
+    await ensureLegacyApiSecretReady()
+    return {
+      configured: await hasApiSecret(),
+    }
   },
 }
 // 初始化backgroundMessage
@@ -206,6 +241,7 @@ chrome.action.onClicked.addListener(async (tab) => {
 })
 
 initTaskService()
+void ensureLegacyApiSecretReady().catch(console.error)
 cleanupSummarySessions().catch(console.error)
 
 chrome.alarms.onAlarm.addListener((alarm) => {

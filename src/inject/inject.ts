@@ -20,8 +20,6 @@ const debug = (...args: any[]) => {
   if (typeof envDataStr === 'string' && envDataStr.length > 0) {
     try {
       const envData = JSON.parse(envDataStr)
-      debug('envData: ', envData)
-
       sidePanel = envData.sidePanel
       manualInsert = envData.manualInsert
     } catch (error) {

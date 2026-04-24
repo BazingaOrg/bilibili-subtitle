@@ -154,8 +154,7 @@ const Body = () => {
   }, [dispatch])
 
   const onSummarizeAll = useCallback(() => {
-    const apiKey = envData.apiKey
-    if (typeof apiKey !== 'string' || apiKey.length === 0) {
+    if (envData.apiKeyConfigured !== true) {
       toast.error('请先在选项页面设置ApiKey!')
       return
     }
@@ -163,7 +162,7 @@ const Body = () => {
       console.error(error)
       toast.error(error instanceof Error ? error.message : '全文总结创建失败')
     })
-  }, [addSummarizeTask, envData.apiKey])
+  }, [addSummarizeTask, envData.apiKeyConfigured])
 
   const onFoldAll = useCallback(() => {
     dispatch(setFoldAll(foldAll !== true))

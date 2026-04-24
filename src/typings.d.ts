@@ -12,7 +12,7 @@ interface EnvData {
   flagDot?: boolean
 
   // openai
-  apiKey?: string
+  apiKeyConfigured?: boolean
   serverUrl?: string
   model?: string
   customModel?: string

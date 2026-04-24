@@ -73,7 +73,27 @@ interface ExtensionDiscoverModelsMessage extends ExtensionMessage<{
   method: 'DISCOVER_MODELS'
 }
 
-export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionUpsertSummarySessionMessage | ExtensionGetSummarySessionMessage | ExtensionDiscoverModelsMessage
+interface ExtensionSetApiSecretMessage extends ExtensionMessage<{
+  apiKey: string
+}, {
+  configured: boolean
+}> {
+  method: 'SET_API_SECRET'
+}
+
+interface ExtensionClearApiSecretMessage extends ExtensionMessage<{}, {
+  configured: boolean
+}> {
+  method: 'CLEAR_API_SECRET'
+}
+
+interface ExtensionGetApiSecretStatusMessage extends ExtensionMessage<{}, {
+  configured: boolean
+}> {
+  method: 'GET_API_SECRET_STATUS'
+}
+
+export type AllExtensionMessages = ExtensionGetTabIdMessage | ExtensionCloseSidePanelMessage | ExtensionAddTaskMessage | ExtensionGetTaskMessage | ExtensionShowFlagMessage | ExtensionSendSummaryEmailMessage | ExtensionUpsertSummarySessionMessage | ExtensionGetSummarySessionMessage | ExtensionDiscoverModelsMessage | ExtensionSetApiSecretMessage | ExtensionClearApiSecretMessage | ExtensionGetApiSecretStatusMessage
 
 // inject
 interface InjectToggleDisplayMessage extends InjectMessage<{}> {

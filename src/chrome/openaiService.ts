@@ -231,14 +231,14 @@ export const repairSummaryJson = async (params: {
   throw new Error(combinedErrorMessage.length > 0 ? combinedErrorMessage : 'Summary repair returned empty content')
 }
 
-export const handleChatCompleteTask = async (task: Task) => {
+export const handleChatCompleteTask = async (task: Task, apiKey: string) => {
   const data = task.def.data
   const serverUrl = getServerUrl(task.def.serverUrl)
   const resp = await fetch(`${serverUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + task.def.extra.apiKey,
+      Authorization: 'Bearer ' + apiKey,
     },
     body: JSON.stringify(data),
   })

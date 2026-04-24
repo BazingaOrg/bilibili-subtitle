@@ -7,7 +7,7 @@ const ENV_DATA_KEYS: Array<keyof EnvData> = [
   'manualInsert',
   'autoExpand',
   'flagDot',
-  'apiKey',
+  'apiKeyConfigured',
   'serverUrl',
   'model',
   'customModel',

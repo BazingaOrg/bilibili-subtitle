@@ -1,5 +1,5 @@
 import {v4} from 'uuid'
-import {handleTask, initTaskService, tasksMap} from './taskService'
+import {consumeTask, enqueueTask, getTaskSnapshot, handleTask, initTaskService} from './taskService'
 import { DEFAULT_USE_PORT, STORAGE_ENV} from '@/consts/const'
 import { AllExtensionMessages } from '@/message-typings'
 import { ExtensionMessaging, TAG_TARGET_INJECT } from '../message'
@@ -90,10 +90,11 @@ const methods: {
     const task: Task = {
       id: v4(),
       startTime: Date.now(),
+      updatedAt: Date.now(),
       status: 'pending',
       def: params.taskDef,
     }
-    tasksMap.set(task.id, task)
+    await enqueueTask(task)
 
     // 立即触发任务
     handleTask(task).catch(console.error)
@@ -103,7 +104,7 @@ const methods: {
   GET_TASK: async (params, context) => {
     // 返回任务信息
     const taskId = params.taskId
-    const task = tasksMap.get(taskId)
+    const task = await getTaskSnapshot(taskId)
     if (task == null) {
       return {
         code: 'not_found',
@@ -112,7 +113,7 @@ const methods: {
 
     // 检测删除缓存
     if (task.status === 'done') {
-      tasksMap.delete(taskId)
+      await consumeTask(taskId)
     }
 
     // 返回任务

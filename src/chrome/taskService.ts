@@ -5,6 +5,102 @@ import {ensureSummaryEmailSent} from './summaryEmailService'
 import {ensureLegacyApiSecretReady, getApiSecret} from './secretService'
 
 export const tasksMap = new Map<string, Task>()
+const TASK_STORAGE_PREFIX = 'makunabe_task:'
+const TASK_HEARTBEAT_INTERVAL_MS = 10 * 1000
+
+const getTaskStorageKey = (taskId: string) => {
+  return `${TASK_STORAGE_PREFIX}${taskId}`
+}
+
+const toStoredTask = (task: Task): Task => {
+  return {
+    ...task,
+    def: {
+      ...task.def,
+      extra: task.def.extra == null
+        ? undefined
+        : Object.fromEntries(Object.entries(task.def.extra).filter(([key]) => key !== 'apiKey')),
+    },
+    resp: undefined,
+  }
+}
+
+const saveTask = async (task: Task) => {
+  task.updatedAt = Date.now()
+  await chrome.storage.local.set({
+    [getTaskStorageKey(task.id)]: JSON.stringify(toStoredTask(task)),
+  })
+}
+
+const removeTask = async (taskId: string) => {
+  await chrome.storage.local.remove(getTaskStorageKey(taskId))
+}
+
+const loadTask = async (taskId: string): Promise<Task | undefined> => {
+  const result = await chrome.storage.local.get(getTaskStorageKey(taskId))
+  const rawValue = result?.[getTaskStorageKey(taskId)]
+
+  if (typeof rawValue !== 'string' || rawValue.length === 0) {
+    return undefined
+  }
+
+  try {
+    return JSON.parse(rawValue) as Task
+  } catch (error) {
+    console.error('Failed to parse stored task', taskId, error)
+    await removeTask(taskId)
+    return undefined
+  }
+}
+
+const loadStoredTasks = async (): Promise<Task[]> => {
+  const result = await chrome.storage.local.get(null)
+  const tasks: Task[] = []
+
+  for (const [storageKey, rawValue] of Object.entries(result)) {
+    if (!storageKey.startsWith(TASK_STORAGE_PREFIX) || typeof rawValue !== 'string' || rawValue.length === 0) {
+      continue
+    }
+
+    try {
+      tasks.push(JSON.parse(rawValue) as Task)
+    } catch (error) {
+      console.error('Failed to parse stored task', storageKey, error)
+      await chrome.storage.local.remove(storageKey)
+    }
+  }
+
+  return tasks
+}
+
+const finalizeInterruptedTask = async (task: Task, message: string) => {
+  task.status = 'done'
+  task.error = message
+  task.endTime = Date.now()
+  await saveTask(task)
+
+  const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
+  if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
+    await finalizeVideoSummary({
+      sessionKey: summarySessionKey,
+      taskError: message,
+    })
+  }
+}
+
+export const enqueueTask = async (task: Task) => {
+  tasksMap.set(task.id, task)
+  await saveTask(task)
+}
+
+export const getTaskSnapshot = async (taskId: string) => {
+  return tasksMap.get(taskId) ?? await loadTask(taskId)
+}
+
+export const consumeTask = async (taskId: string) => {
+  tasksMap.delete(taskId)
+  await removeTask(taskId)
+}
 
 const getApiSecretOrThrow = async () => {
   await ensureLegacyApiSecretReady()
@@ -89,8 +185,16 @@ const rerunChatCompleteTask = async (task: Task, apiKey: string) => {
 
 export const handleTask = async (task: Task) => {
   console.debug(`处理任务: ${task.id} (type: ${task.def.type})`)
+  let heartbeatTimer: ReturnType<typeof setInterval> | undefined
   try {
     task.status = 'running'
+    task.heartbeatAt = Date.now()
+    await saveTask(task)
+    heartbeatTimer = setInterval(() => {
+      task.heartbeatAt = Date.now()
+      saveTask(task).catch(console.error)
+    }, TASK_HEARTBEAT_INTERVAL_MS)
+
     switch (task.def.type) {
       case 'chatComplete': {
         const apiKey = await getApiSecretOrThrow()
@@ -123,6 +227,10 @@ export const handleTask = async (task: Task) => {
     }
   }
 
+  if (heartbeatTimer != null) {
+    clearInterval(heartbeatTimer)
+  }
+
   if (task.error == null && task.def.type === 'chatComplete') {
     try {
       const apiKey = await getApiSecretOrThrow()
@@ -134,6 +242,8 @@ export const handleTask = async (task: Task) => {
 
   task.status = 'done'
   task.endTime = Date.now()
+  task.heartbeatAt = Date.now()
+  await saveTask(task)
 
   const summarySessionKey = task.def.extra?.summarySessionKey as string | undefined
   if (typeof summarySessionKey === 'string' && summarySessionKey.length > 0) {
@@ -149,6 +259,30 @@ export const handleTask = async (task: Task) => {
 }
 
 export const initTaskService = () => {
+  loadStoredTasks().then(async (storedTasks) => {
+    const now = Date.now()
+
+    for (const task of storedTasks) {
+      if (task.startTime < now - TASK_EXPIRE_TIME) {
+        await removeTask(task.id)
+        continue
+      }
+
+      if (task.status === 'pending') {
+        tasksMap.set(task.id, task)
+        handleTask(task).catch(console.error)
+        continue
+      }
+
+      if (task.status === 'running') {
+        await finalizeInterruptedTask(task, '总结任务因扩展后台重启而中断，请重新生成。')
+        continue
+      }
+
+      tasksMap.set(task.id, task)
+    }
+  }).catch(console.error)
+
   // 处理任务: tasksMap
   setInterval(() => {
     for (const task of tasksMap.values()) {
@@ -167,6 +301,7 @@ export const initTaskService = () => {
     for (const [taskId, task] of tasksMap) {
       if (task.startTime < now - TASK_EXPIRE_TIME) {
         tasksMap.delete(taskId)
+        removeTask(taskId).catch(console.error)
         console.debug(`清理任务: ${task.id} (type: ${task.def.type})`)
       }
     }

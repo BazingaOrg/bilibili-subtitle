@@ -57,6 +57,8 @@ interface Task {
   id: string
   startTime: number
   endTime?: number
+  updatedAt?: number
+  heartbeatAt?: number
   def: TaskDef
 
   status: 'pending' | 'running' | 'done'
